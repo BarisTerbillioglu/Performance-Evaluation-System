@@ -1,4 +1,4 @@
-namespace PerformanceEvaluation.Application.Auth
+namespace PerformanceEvaluation.Application.DTOs.Auth
 {
 
     public class LoginResponse

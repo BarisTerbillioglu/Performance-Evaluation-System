@@ -17,9 +17,9 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 name: "CriteriaCategories",
                 columns: table => new
                 {
-                    CategoryID = table.Column<int>(type: "int", nullable: false)
+                    ID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    CategoryName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     Weight = table.Column<decimal>(type: "decimal(5,2)", nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
@@ -28,60 +28,75 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_CriteriaCategories", x => x.CategoryID);
+                    table.PrimaryKey("PK_CriteriaCategories", x => x.ID);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Departments",
                 columns: table => new
                 {
-                    DepartmentID = table.Column<int>(type: "int", nullable: false)
+                    ID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    DepartmentName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Departments", x => x.DepartmentID);
+                    table.PrimaryKey("PK_Departments", x => x.ID);
                 });
 
             migrationBuilder.CreateTable(
-                name: "JobRoles",
+                name: "Roles",
                 columns: table => new
                 {
-                    RoleID = table.Column<int>(type: "int", nullable: false)
+                    ID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    RoleName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_JobRoles", x => x.RoleID);
+                    table.PrimaryKey("PK_Roles", x => x.ID);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Team",
+                columns: table => new
+                {
+                    ID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Team", x => x.ID);
                 });
 
             migrationBuilder.CreateTable(
                 name: "Criteria",
                 columns: table => new
                 {
-                    CriteriaID = table.Column<int>(type: "int", nullable: false)
+                    ID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    CriteriaName = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
+                    CategoryID = table.Column<int>(type: "int", nullable: false),
+                    Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     BaseDescription = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
-                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    CategoryID = table.Column<int>(type: "int", nullable: false)
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Criteria", x => x.CriteriaID);
+                    table.PrimaryKey("PK_Criteria", x => x.ID);
                     table.ForeignKey(
                         name: "FK_Criteria_CriteriaCategories_CategoryID",
                         column: x => x.CategoryID,
                         principalTable: "CriteriaCategories",
-                        principalColumn: "CategoryID",
+                        principalColumn: "ID",
                         onDelete: ReferentialAction.Cascade);
                 });
 
@@ -89,25 +104,25 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 name: "Users",
                 columns: table => new
                 {
-                    UserID = table.Column<int>(type: "int", nullable: false)
+                    ID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
+                    DepartmentID = table.Column<int>(type: "int", nullable: false),
                     FirstName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     LastName = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     Email = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     PasswordHash = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    DepartmentID = table.Column<int>(type: "int", nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Users", x => x.UserID);
+                    table.PrimaryKey("PK_Users", x => x.ID);
                     table.ForeignKey(
                         name: "FK_Users_Departments_DepartmentID",
                         column: x => x.DepartmentID,
                         principalTable: "Departments",
-                        principalColumn: "DepartmentID",
+                        principalColumn: "ID",
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -115,55 +130,27 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 name: "RoleCriteriaDescriptions",
                 columns: table => new
                 {
-                    DescriptionID = table.Column<int>(type: "int", nullable: false)
+                    ID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
-                    RoleDescription = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     Example = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
                     CriteriaID = table.Column<int>(type: "int", nullable: false),
                     RoleID = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_RoleCriteriaDescriptions", x => x.DescriptionID);
+                    table.PrimaryKey("PK_RoleCriteriaDescriptions", x => x.ID);
                     table.ForeignKey(
                         name: "FK_RoleCriteriaDescriptions_Criteria_CriteriaID",
                         column: x => x.CriteriaID,
                         principalTable: "Criteria",
-                        principalColumn: "CriteriaID",
+                        principalColumn: "ID",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_RoleCriteriaDescriptions_JobRoles_RoleID",
+                        name: "FK_RoleCriteriaDescriptions_Roles_RoleID",
                         column: x => x.RoleID,
-                        principalTable: "JobRoles",
-                        principalColumn: "RoleID",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "EvaluationAssignments",
-                columns: table => new
-                {
-                    AssignmentID = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
-                    AssignedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
-                    IsActive = table.Column<bool>(type: "bit", nullable: false),
-                    EvaluatorID = table.Column<int>(type: "int", nullable: false),
-                    EmployeeID = table.Column<int>(type: "int", nullable: false)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_EvaluationAssignments", x => x.AssignmentID);
-                    table.ForeignKey(
-                        name: "FK_EvaluationAssignments_Users_EmployeeID",
-                        column: x => x.EmployeeID,
-                        principalTable: "Users",
-                        principalColumn: "UserID",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_EvaluationAssignments_Users_EvaluatorID",
-                        column: x => x.EvaluatorID,
-                        principalTable: "Users",
-                        principalColumn: "UserID",
+                        principalTable: "Roles",
+                        principalColumn: "ID",
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -171,11 +158,11 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 name: "Evaluations",
                 columns: table => new
                 {
-                    EvaluationID = table.Column<int>(type: "int", nullable: false)
+                    ID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     EvaluatorID = table.Column<int>(type: "int", nullable: false),
                     EmployeeID = table.Column<int>(type: "int", nullable: false),
-                    EvaluationPeriod = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    Period = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
@@ -186,26 +173,60 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Evaluations", x => x.EvaluationID);
+                    table.PrimaryKey("PK_Evaluations", x => x.ID);
                     table.ForeignKey(
                         name: "FK_Evaluations_Users_EmployeeID",
                         column: x => x.EmployeeID,
                         principalTable: "Users",
-                        principalColumn: "UserID",
+                        principalColumn: "ID",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Evaluations_Users_EvaluatorID",
                         column: x => x.EvaluatorID,
                         principalTable: "Users",
-                        principalColumn: "UserID",
+                        principalColumn: "ID",
                         onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
-                name: "UserRoles",
+                name: "EvaluatorAssignments",
                 columns: table => new
                 {
-                    UserRoleID = table.Column<int>(type: "int", nullable: false)
+                    ID = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    AssignedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
+                    EvaluatorID = table.Column<int>(type: "int", nullable: false),
+                    TeamID = table.Column<int>(type: "int", nullable: false),
+                    UserID = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_EvaluatorAssignments", x => x.ID);
+                    table.ForeignKey(
+                        name: "FK_EvaluatorAssignments_Team_TeamID",
+                        column: x => x.TeamID,
+                        principalTable: "Team",
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_EvaluatorAssignments_Users_EvaluatorID",
+                        column: x => x.EvaluatorID,
+                        principalTable: "Users",
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_EvaluatorAssignments_Users_UserID",
+                        column: x => x.UserID,
+                        principalTable: "Users",
+                        principalColumn: "ID");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "RoleAssignments",
+                columns: table => new
+                {
+                    ID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserID = table.Column<int>(type: "int", nullable: false),
                     RoleID = table.Column<int>(type: "int", nullable: false),
@@ -213,18 +234,18 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_UserRoles", x => x.UserRoleID);
+                    table.PrimaryKey("PK_RoleAssignments", x => x.ID);
                     table.ForeignKey(
-                        name: "FK_UserRoles_JobRoles_RoleID",
+                        name: "FK_RoleAssignments_Roles_RoleID",
                         column: x => x.RoleID,
-                        principalTable: "JobRoles",
-                        principalColumn: "RoleID",
+                        principalTable: "Roles",
+                        principalColumn: "ID",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
-                        name: "FK_UserRoles_Users_UserID",
+                        name: "FK_RoleAssignments_Users_UserID",
                         column: x => x.UserID,
                         principalTable: "Users",
-                        principalColumn: "UserID",
+                        principalColumn: "ID",
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -232,7 +253,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 name: "EvaluationScores",
                 columns: table => new
                 {
-                    ScoreID = table.Column<int>(type: "int", nullable: false)
+                    ID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Score = table.Column<int>(type: "int", nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
@@ -241,18 +262,18 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_EvaluationScores", x => x.ScoreID);
+                    table.PrimaryKey("PK_EvaluationScores", x => x.ID);
                     table.ForeignKey(
                         name: "FK_EvaluationScores_Criteria_CriteriaID",
                         column: x => x.CriteriaID,
                         principalTable: "Criteria",
-                        principalColumn: "CriteriaID",
+                        principalColumn: "ID",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_EvaluationScores_Evaluations_EvaluationID",
                         column: x => x.EvaluationID,
                         principalTable: "Evaluations",
-                        principalColumn: "EvaluationID",
+                        principalColumn: "ID",
                         onDelete: ReferentialAction.Restrict);
                 });
 
@@ -260,33 +281,33 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 name: "Comments",
                 columns: table => new
                 {
-                    CommentID = table.Column<int>(type: "int", nullable: false)
+                    ID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     ScoreID = table.Column<int>(type: "int", nullable: false),
-                    CommentDescription = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
+                    Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     UpdatedDate = table.Column<DateTime>(type: "datetime2", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Comments", x => x.CommentID);
+                    table.PrimaryKey("PK_Comments", x => x.ID);
                     table.ForeignKey(
                         name: "FK_Comments_EvaluationScores_ScoreID",
                         column: x => x.ScoreID,
                         principalTable: "EvaluationScores",
-                        principalColumn: "ScoreID",
+                        principalColumn: "ID",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.InsertData(
                 table: "Departments",
-                columns: new[] { "DepartmentID", "CreatedDate", "DepartmentName", "Description", "IsActive" },
-                values: new object[] { 1, new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), "Money Transfer Department", null, true });
+                columns: new[] { "ID", "CreatedDate", "Description", "IsActive", "Name" },
+                values: new object[] { 1, new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), null, true, "Money Transfer Department" });
 
             migrationBuilder.InsertData(
-                table: "JobRoles",
-                columns: new[] { "RoleID", "Description", "IsActive", "RoleName" },
+                table: "Roles",
+                columns: new[] { "ID", "Description", "IsActive", "Name" },
                 values: new object[,]
                 {
                     { 1, "System Administrator", true, "Admin" },
@@ -299,12 +320,12 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
 
             migrationBuilder.InsertData(
                 table: "Users",
-                columns: new[] { "UserID", "CreatedDate", "DepartmentID", "Email", "FirstName", "IsActive", "LastName", "PasswordHash", "UpdatedDate" },
-                values: new object[] { 1, new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), 1, "admin@vakifbank.com", "System", true, "Admin", "$2a$11$k8NqsIWNZNc04q3hz4K22.2AIxMe731uW7rDdTbvf8.HnWPlLfFAC", null });
+                columns: new[] { "ID", "CreatedDate", "DepartmentID", "Email", "FirstName", "IsActive", "LastName", "PasswordHash", "UpdatedDate" },
+                values: new object[] { 1, new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), 1, "admin@vakifbank.com", "System", true, "Admin", "$2a$11$U3O2KBocQu5/eNWyq6HareEy7Z1QLjrgV783cpVlZxDEsAQodJe3K", null });
 
             migrationBuilder.InsertData(
-                table: "UserRoles",
-                columns: new[] { "UserRoleID", "AssignedDate", "RoleID", "UserID" },
+                table: "RoleAssignments",
+                columns: new[] { "ID", "AssignedDate", "RoleID", "UserID" },
                 values: new object[,]
                 {
                     { 1, new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), 1, 1 },
@@ -312,9 +333,9 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Comments_CommentDescription",
+                name: "IX_Comments_Description",
                 table: "Comments",
-                column: "CommentDescription",
+                column: "Description",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -328,27 +349,16 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 column: "CategoryID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_CriteriaCategories_CategoryName",
+                name: "IX_CriteriaCategories_Name",
                 table: "CriteriaCategories",
-                column: "CategoryName",
+                column: "Name",
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Departments_DepartmentName",
+                name: "IX_Departments_Name",
                 table: "Departments",
-                column: "DepartmentName",
+                column: "Name",
                 unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_EvaluationAssignments_EmployeeID_EvaluatorID",
-                table: "EvaluationAssignments",
-                columns: new[] { "EmployeeID", "EvaluatorID" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_EvaluationAssignments_EvaluatorID",
-                table: "EvaluationAssignments",
-                column: "EvaluatorID");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Evaluations_EmployeeID",
@@ -372,9 +382,30 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 column: "EvaluationID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_JobRoles_RoleName",
-                table: "JobRoles",
-                column: "RoleName",
+                name: "IX_EvaluatorAssignments_EvaluatorID",
+                table: "EvaluatorAssignments",
+                column: "EvaluatorID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_EvaluatorAssignments_TeamID_EvaluatorID",
+                table: "EvaluatorAssignments",
+                columns: new[] { "TeamID", "EvaluatorID" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_EvaluatorAssignments_UserID",
+                table: "EvaluatorAssignments",
+                column: "UserID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RoleAssignments_RoleID",
+                table: "RoleAssignments",
+                column: "RoleID");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_RoleAssignments_UserID_RoleID",
+                table: "RoleAssignments",
+                columns: new[] { "UserID", "RoleID" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -388,14 +419,9 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 column: "RoleID");
 
             migrationBuilder.CreateIndex(
-                name: "IX_UserRoles_RoleID",
-                table: "UserRoles",
-                column: "RoleID");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_UserRoles_UserID_RoleID",
-                table: "UserRoles",
-                columns: new[] { "UserID", "RoleID" },
+                name: "IX_Roles_Name",
+                table: "Roles",
+                column: "Name",
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -417,19 +443,22 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 name: "Comments");
 
             migrationBuilder.DropTable(
-                name: "EvaluationAssignments");
+                name: "EvaluatorAssignments");
+
+            migrationBuilder.DropTable(
+                name: "RoleAssignments");
 
             migrationBuilder.DropTable(
                 name: "RoleCriteriaDescriptions");
 
             migrationBuilder.DropTable(
-                name: "UserRoles");
-
-            migrationBuilder.DropTable(
                 name: "EvaluationScores");
 
             migrationBuilder.DropTable(
-                name: "JobRoles");
+                name: "Team");
+
+            migrationBuilder.DropTable(
+                name: "Roles");
 
             migrationBuilder.DropTable(
                 name: "Criteria");

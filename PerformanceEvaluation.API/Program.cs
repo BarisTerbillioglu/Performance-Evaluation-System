@@ -5,6 +5,13 @@ using Microsoft.OpenApi.Models;
 using PerformanceEvaluation.Infrastructure.Data;
 using System.Text;
 
+using PerformanceEvaluation.Core.Interfaces;
+using PerformanceEvaluation.Application.Services.Interfaces;
+using PerformanceEvaluation.Application.Services.Implementations;
+using PerformanceEvaluation.Infrastructure.Services.Interfaces;
+using PerformanceEvaluation.Infrastructure.Services.Implementations;
+
+
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
@@ -98,13 +105,13 @@ builder.Services.AddCors(options =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo 
-    { 
-        Title = "Performance Evaluation API", 
+    c.SwaggerDoc("v1", new OpenApiInfo
+    {
+        Title = "Performance Evaluation API",
         Version = "v1",
         Description = "IT Department Performance Evaluation System API"
     });
-    
+
     // JWT Bearer configuration for Swagger
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -114,7 +121,7 @@ builder.Services.AddSwaggerGen(c =>
         Type = SecuritySchemeType.ApiKey,
         Scheme = "Bearer"
     });
-    
+
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -131,10 +138,17 @@ builder.Services.AddSwaggerGen(c =>
     });
 });
 
+// Domain Services (Core Layer)
+builder.Services.AddScoped<IAuthService, AuthService>();
+
+// Infrastructure Services
+builder.Services.AddScoped<ITokenService, TokenService>();
+
+// Application Services
+builder.Services.AddScoped<IAuthApplicationService, AuthApplicationService>();
+
 // Register application services
 // TODO: Add your service registrations here
-// builder.Services.AddScoped<IUserService, UserService>();
-// builder.Services.AddScoped<IEvaluationService, EvaluationService>();
 
 var app = builder.Build();
 
@@ -161,7 +175,15 @@ app.MapControllers();
 using (var scope = app.Services.CreateScope())
 {
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    context.Database.EnsureCreated();
+    try
+    {
+        context.Database.Migrate(); 
+    }
+    catch (Exception ex)
+    {
+        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+        logger.LogError(ex, "Error applying database migrations");
+    }
 }
 
 app.Run();

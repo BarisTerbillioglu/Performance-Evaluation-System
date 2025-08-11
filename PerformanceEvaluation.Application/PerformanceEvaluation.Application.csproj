@@ -2,6 +2,8 @@
 
   <ItemGroup>
     <ProjectReference Include="..\PerformanceEvaluation.Core\PerformanceEvaluation.Core.csproj" />
+    <ProjectReference Include="..\PerformanceEvaluation.Infrastructure\PerformanceEvaluation.Infrastructure.csproj" />
+
   </ItemGroup>
 
   <ItemGroup>

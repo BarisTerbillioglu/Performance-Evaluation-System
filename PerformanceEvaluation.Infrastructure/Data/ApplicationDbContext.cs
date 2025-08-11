@@ -215,13 +215,13 @@ namespace PerformanceEvaluation.Infrastructure.Data
 
             modelBuilder.Entity<Role>().HasData(
 
-                new Role { RoleID = 1, RoleName = "Admin", Description = "System Administrator", IsActive = true },
-                new Role { RoleID = 2, RoleName = "Evaluator", Description = "Can evaluate employees", IsActive = true },
-                new Role { RoleID = 3, RoleName = "Employee", Description = "Regular employee", IsActive = true },
+                new Role { ID = 1, Name = "Admin", Description = "System Administrator", IsActive = true },
+                new Role { ID = 2, Name = "Evaluator", Description = "Can evaluate employees", IsActive = true },
+                new Role { ID = 3, Name = "Employee", Description = "Regular employee", IsActive = true },
 
-                new Role { RoleID = 4, RoleName = "Business Analyst", Description = "Business Analyst", IsActive = true },
-                new Role { RoleID = 5, RoleName = "Developer", Description = "Software Developer", IsActive = true },
-                new Role { RoleID = 6, RoleName = "QA Specialist", Description = "Quality Assurance Specialist", IsActive = true }
+                new Role { ID = 4, Name = "Business Analyst", Description = "Business Analyst", IsActive = true },
+                new Role { ID = 5, Name = "Developer", Description = "Software Developer", IsActive = true },
+                new Role { ID = 6, Name = "QA Specialist", Description = "Quality Assurance Specialist", IsActive = true }
 
             );
 

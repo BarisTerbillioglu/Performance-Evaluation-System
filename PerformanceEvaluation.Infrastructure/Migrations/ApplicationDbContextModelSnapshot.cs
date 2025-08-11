@@ -24,19 +24,19 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
 
             modelBuilder.Entity("PerformanceEvaluation.Core.Entities.Comment", b =>
                 {
-                    b.Property<int>("CommentID")
+                    b.Property<int>("ID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CommentID"));
-
-                    b.Property<string>("CommentDescription")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
@@ -47,9 +47,9 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("datetime2");
 
-                    b.HasKey("CommentID");
+                    b.HasKey("ID");
 
-                    b.HasIndex("CommentDescription")
+                    b.HasIndex("Description")
                         .IsUnique();
 
                     b.HasIndex("ScoreID");
@@ -59,11 +59,11 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
 
             modelBuilder.Entity("PerformanceEvaluation.Core.Entities.Criteria", b =>
                 {
-                    b.Property<int>("CriteriaID")
+                    b.Property<int>("ID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CriteriaID"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
 
                     b.Property<string>("BaseDescription")
                         .HasMaxLength(500)
@@ -75,15 +75,15 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("CriteriaName")
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.HasKey("CriteriaID");
+                    b.HasKey("ID");
 
                     b.HasIndex("CategoryID");
 
@@ -92,16 +92,11 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
 
             modelBuilder.Entity("PerformanceEvaluation.Core.Entities.CriteriaCategory", b =>
                 {
-                    b.Property<int>("CategoryID")
+                    b.Property<int>("ID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("CategoryID"));
-
-                    b.Property<string>("CategoryName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -112,6 +107,11 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("datetime2");
@@ -119,9 +119,9 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.Property<decimal>("Weight")
                         .HasColumnType("decimal(5,2)");
 
-                    b.HasKey("CategoryID");
+                    b.HasKey("ID");
 
-                    b.HasIndex("CategoryName")
+                    b.HasIndex("Name")
                         .IsUnique();
 
                     b.ToTable("CriteriaCategories");
@@ -129,19 +129,14 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
 
             modelBuilder.Entity("PerformanceEvaluation.Core.Entities.Department", b =>
                 {
-                    b.Property<int>("DepartmentID")
+                    b.Property<int>("ID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DepartmentID"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
-
-                    b.Property<string>("DepartmentName")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
@@ -150,9 +145,14 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.HasKey("DepartmentID");
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
-                    b.HasIndex("DepartmentName")
+                    b.HasKey("ID");
+
+                    b.HasIndex("Name")
                         .IsUnique();
 
                     b.ToTable("Departments");
@@ -160,20 +160,20 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.HasData(
                         new
                         {
-                            DepartmentID = 1,
+                            ID = 1,
                             CreatedDate = new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            DepartmentName = "Money Transfer Department",
-                            IsActive = true
+                            IsActive = true,
+                            Name = "Money Transfer Department"
                         });
                 });
 
             modelBuilder.Entity("PerformanceEvaluation.Core.Entities.Evaluation", b =>
                 {
-                    b.Property<int>("EvaluationID")
+                    b.Property<int>("ID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("EvaluationID"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
 
                     b.Property<DateTime?>("CompletedDate")
                         .HasColumnType("datetime2");
@@ -187,17 +187,17 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("EvaluationPeriod")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)");
-
                     b.Property<int>("EvaluatorID")
                         .HasColumnType("int");
 
                     b.Property<string>("GeneralComments")
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Period")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("datetime2");
@@ -210,7 +210,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.Property<decimal>("TotalScore")
                         .HasColumnType("decimal(5,2)");
 
-                    b.HasKey("EvaluationID");
+                    b.HasKey("ID");
 
                     b.HasIndex("EmployeeID");
 
@@ -219,43 +219,13 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.ToTable("Evaluations");
                 });
 
-            modelBuilder.Entity("PerformanceEvaluation.Core.Entities.EvaluationAssignment", b =>
-                {
-                    b.Property<int>("AssignmentID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("AssignmentID"));
-
-                    b.Property<DateTime>("AssignedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("EmployeeID")
-                        .HasColumnType("int");
-
-                    b.Property<int>("EvaluatorID")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
-                    b.HasKey("AssignmentID");
-
-                    b.HasIndex("EvaluatorID");
-
-                    b.HasIndex("EmployeeID", "EvaluatorID")
-                        .IsUnique();
-
-                    b.ToTable("EvaluationAssignments");
-                });
-
             modelBuilder.Entity("PerformanceEvaluation.Core.Entities.EvaluationScore", b =>
                 {
-                    b.Property<int>("ScoreID")
+                    b.Property<int>("ID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ScoreID"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -269,7 +239,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.Property<int>("Score")
                         .HasColumnType("int");
 
-                    b.HasKey("ScoreID");
+                    b.HasKey("ID");
 
                     b.HasIndex("EvaluationID");
 
@@ -279,13 +249,48 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.ToTable("EvaluationScores");
                 });
 
-            modelBuilder.Entity("PerformanceEvaluation.Core.Entities.JobRole", b =>
+            modelBuilder.Entity("PerformanceEvaluation.Core.Entities.EvaluatorAssignment", b =>
                 {
-                    b.Property<int>("RoleID")
+                    b.Property<int>("ID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("RoleID"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<DateTime>("AssignedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("EvaluatorID")
+                        .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
+                    b.Property<int>("TeamID")
+                        .HasColumnType("int");
+
+                    b.Property<int?>("UserID")
+                        .HasColumnType("int");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("EvaluatorID");
+
+                    b.HasIndex("UserID");
+
+                    b.HasIndex("TeamID", "EvaluatorID")
+                        .IsUnique();
+
+                    b.ToTable("EvaluatorAssignments");
+                });
+
+            modelBuilder.Entity("PerformanceEvaluation.Core.Entities.Role", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
@@ -294,87 +299,130 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
-                    b.Property<string>("RoleName")
+                    b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
-                    b.HasKey("RoleID");
+                    b.HasKey("ID");
 
-                    b.HasIndex("RoleName")
+                    b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("JobRoles");
+                    b.ToTable("Roles");
 
                     b.HasData(
                         new
                         {
-                            RoleID = 1,
+                            ID = 1,
                             Description = "System Administrator",
                             IsActive = true,
-                            RoleName = "Admin"
+                            Name = "Admin"
                         },
                         new
                         {
-                            RoleID = 2,
+                            ID = 2,
                             Description = "Can evaluate employees",
                             IsActive = true,
-                            RoleName = "Evaluator"
+                            Name = "Evaluator"
                         },
                         new
                         {
-                            RoleID = 3,
+                            ID = 3,
                             Description = "Regular employee",
                             IsActive = true,
-                            RoleName = "Employee"
+                            Name = "Employee"
                         },
                         new
                         {
-                            RoleID = 4,
+                            ID = 4,
                             Description = "Business Analyst",
                             IsActive = true,
-                            RoleName = "Business Analyst"
+                            Name = "Business Analyst"
                         },
                         new
                         {
-                            RoleID = 5,
+                            ID = 5,
                             Description = "Software Developer",
                             IsActive = true,
-                            RoleName = "Developer"
+                            Name = "Developer"
                         },
                         new
                         {
-                            RoleID = 6,
+                            ID = 6,
                             Description = "Quality Assurance Specialist",
                             IsActive = true,
-                            RoleName = "QA Specialist"
+                            Name = "QA Specialist"
+                        });
+                });
+
+            modelBuilder.Entity("PerformanceEvaluation.Core.Entities.RoleAssignment", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<DateTime>("AssignedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RoleID")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserID")
+                        .HasColumnType("int");
+
+                    b.HasKey("ID");
+
+                    b.HasIndex("RoleID");
+
+                    b.HasIndex("UserID", "RoleID")
+                        .IsUnique();
+
+                    b.ToTable("RoleAssignments");
+
+                    b.HasData(
+                        new
+                        {
+                            ID = 1,
+                            AssignedDate = new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            RoleID = 1,
+                            UserID = 1
+                        },
+                        new
+                        {
+                            ID = 2,
+                            AssignedDate = new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            RoleID = 5,
+                            UserID = 1
                         });
                 });
 
             modelBuilder.Entity("PerformanceEvaluation.Core.Entities.RoleCriteriaDescription", b =>
                 {
-                    b.Property<int>("DescriptionID")
+                    b.Property<int>("ID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("DescriptionID"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
 
                     b.Property<int>("CriteriaID")
                         .HasColumnType("int");
 
-                    b.Property<string>("Example")
+                    b.Property<string>("Description")
+                        .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<string>("RoleDescription")
-                        .IsRequired()
+                    b.Property<string>("Example")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
                     b.Property<int>("RoleID")
                         .HasColumnType("int");
 
-                    b.HasKey("DescriptionID");
+                    b.HasKey("ID");
 
                     b.HasIndex("RoleID");
 
@@ -383,13 +431,39 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.ToTable("RoleCriteriaDescriptions");
                 });
 
-            modelBuilder.Entity("PerformanceEvaluation.Core.Entities.User", b =>
+            modelBuilder.Entity("PerformanceEvaluation.Core.Entities.Team", b =>
                 {
-                    b.Property<int>("UserID")
+                    b.Property<int>("ID")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserID"));
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
+
+                    b.Property<DateTime>("CreatedDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("ID");
+
+                    b.ToTable("Team");
+                });
+
+            modelBuilder.Entity("PerformanceEvaluation.Core.Entities.User", b =>
+                {
+                    b.Property<int>("ID")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ID"));
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -422,7 +496,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.Property<DateTime?>("UpdatedDate")
                         .HasColumnType("datetime2");
 
-                    b.HasKey("UserID");
+                    b.HasKey("ID");
 
                     b.HasIndex("DepartmentID");
 
@@ -434,57 +508,14 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.HasData(
                         new
                         {
-                            UserID = 1,
+                            ID = 1,
                             CreatedDate = new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
                             DepartmentID = 1,
                             Email = "admin@vakifbank.com",
                             FirstName = "System",
                             IsActive = true,
                             LastName = "Admin",
-                            PasswordHash = "$2a$11$k8NqsIWNZNc04q3hz4K22.2AIxMe731uW7rDdTbvf8.HnWPlLfFAC"
-                        });
-                });
-
-            modelBuilder.Entity("PerformanceEvaluation.Core.Entities.UserRole", b =>
-                {
-                    b.Property<int>("UserRoleID")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("UserRoleID"));
-
-                    b.Property<DateTime>("AssignedDate")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("RoleID")
-                        .HasColumnType("int");
-
-                    b.Property<int>("UserID")
-                        .HasColumnType("int");
-
-                    b.HasKey("UserRoleID");
-
-                    b.HasIndex("RoleID");
-
-                    b.HasIndex("UserID", "RoleID")
-                        .IsUnique();
-
-                    b.ToTable("UserRoles");
-
-                    b.HasData(
-                        new
-                        {
-                            UserRoleID = 1,
-                            AssignedDate = new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            RoleID = 1,
-                            UserID = 1
-                        },
-                        new
-                        {
-                            UserRoleID = 2,
-                            AssignedDate = new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            RoleID = 5,
-                            UserID = 1
+                            PasswordHash = "$2a$11$U3O2KBocQu5/eNWyq6HareEy7Z1QLjrgV783cpVlZxDEsAQodJe3K"
                         });
                 });
 
@@ -529,25 +560,6 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.Navigation("Evaluator");
                 });
 
-            modelBuilder.Entity("PerformanceEvaluation.Core.Entities.EvaluationAssignment", b =>
-                {
-                    b.HasOne("PerformanceEvaluation.Core.Entities.User", "Employee")
-                        .WithMany("EmployeeAssignments")
-                        .HasForeignKey("EmployeeID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("PerformanceEvaluation.Core.Entities.User", "Evaluator")
-                        .WithMany("EvaluatorAssignments")
-                        .HasForeignKey("EvaluatorID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Employee");
-
-                    b.Navigation("Evaluator");
-                });
-
             modelBuilder.Entity("PerformanceEvaluation.Core.Entities.EvaluationScore", b =>
                 {
                     b.HasOne("PerformanceEvaluation.Core.Entities.Criteria", "Criteria")
@@ -567,6 +579,48 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.Navigation("Evaluation");
                 });
 
+            modelBuilder.Entity("PerformanceEvaluation.Core.Entities.EvaluatorAssignment", b =>
+                {
+                    b.HasOne("PerformanceEvaluation.Core.Entities.User", "Evaluator")
+                        .WithMany("EvaluatorAssignments")
+                        .HasForeignKey("EvaluatorID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PerformanceEvaluation.Core.Entities.Team", "Team")
+                        .WithMany("EvaluatorAssignments")
+                        .HasForeignKey("TeamID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PerformanceEvaluation.Core.Entities.User", null)
+                        .WithMany("TeamAssignments")
+                        .HasForeignKey("UserID");
+
+                    b.Navigation("Evaluator");
+
+                    b.Navigation("Team");
+                });
+
+            modelBuilder.Entity("PerformanceEvaluation.Core.Entities.RoleAssignment", b =>
+                {
+                    b.HasOne("PerformanceEvaluation.Core.Entities.Role", "Role")
+                        .WithMany("RoleAssignments")
+                        .HasForeignKey("RoleID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("PerformanceEvaluation.Core.Entities.User", "User")
+                        .WithMany("RoleAssignments")
+                        .HasForeignKey("UserID")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Role");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("PerformanceEvaluation.Core.Entities.RoleCriteriaDescription", b =>
                 {
                     b.HasOne("PerformanceEvaluation.Core.Entities.Criteria", "Criteria")
@@ -575,7 +629,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("PerformanceEvaluation.Core.Entities.JobRole", "JobRole")
+                    b.HasOne("PerformanceEvaluation.Core.Entities.Role", "Role")
                         .WithMany("RoleCriteriaDescriptions")
                         .HasForeignKey("RoleID")
                         .OnDelete(DeleteBehavior.Restrict)
@@ -583,7 +637,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
 
                     b.Navigation("Criteria");
 
-                    b.Navigation("JobRole");
+                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("PerformanceEvaluation.Core.Entities.User", b =>
@@ -595,25 +649,6 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("Department");
-                });
-
-            modelBuilder.Entity("PerformanceEvaluation.Core.Entities.UserRole", b =>
-                {
-                    b.HasOne("PerformanceEvaluation.Core.Entities.JobRole", "JobRole")
-                        .WithMany("UserRoles")
-                        .HasForeignKey("RoleID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("PerformanceEvaluation.Core.Entities.User", "User")
-                        .WithMany("UserRoles")
-                        .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("JobRole");
-
-                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("PerformanceEvaluation.Core.Entities.Criteria", b =>
@@ -643,24 +678,29 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.Navigation("Comments");
                 });
 
-            modelBuilder.Entity("PerformanceEvaluation.Core.Entities.JobRole", b =>
+            modelBuilder.Entity("PerformanceEvaluation.Core.Entities.Role", b =>
                 {
-                    b.Navigation("RoleCriteriaDescriptions");
+                    b.Navigation("RoleAssignments");
 
-                    b.Navigation("UserRoles");
+                    b.Navigation("RoleCriteriaDescriptions");
+                });
+
+            modelBuilder.Entity("PerformanceEvaluation.Core.Entities.Team", b =>
+                {
+                    b.Navigation("EvaluatorAssignments");
                 });
 
             modelBuilder.Entity("PerformanceEvaluation.Core.Entities.User", b =>
                 {
-                    b.Navigation("EmployeeAssignments");
-
                     b.Navigation("EmployeeEvaluations");
 
                     b.Navigation("EvaluatorAssignments");
 
                     b.Navigation("EvaluatorEvaluations");
 
-                    b.Navigation("UserRoles");
+                    b.Navigation("RoleAssignments");
+
+                    b.Navigation("TeamAssignments");
                 });
 #pragma warning restore 612, 618
         }
