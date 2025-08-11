@@ -51,7 +51,7 @@ namespace PerformanceEvaluation.Infrastructure.Data
             //User config
             modelBuilder.Entity<User>(entity =>
             {
-                entity.HasKey(e => e.UserID);
+                entity.HasKey(e => e.ID);
 
                 entity.Property(e => e.FirstName).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.LastName).IsRequired().HasMaxLength(50);
@@ -100,7 +100,7 @@ namespace PerformanceEvaluation.Infrastructure.Data
             //CriteriaCategory config
             modelBuilder.Entity<CriteriaCategory>(entity =>
             {
-                entity.HasKey(e => e.CategoryID);
+                entity.HasKey(e => e.ID);
                 entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
                 entity.Property(e => e.Description).HasMaxLength(500);
                 entity.Property(e => e.Weight).HasColumnType("decimal(5,2)");
@@ -130,7 +130,7 @@ namespace PerformanceEvaluation.Infrastructure.Data
             //Evaluation config
             modelBuilder.Entity<Evaluation>(entity =>
             {
-                entity.HasKey(e => e.EvaluationID);
+                entity.HasKey(e => e.ID);
                 entity.Property(e => e.Period).IsRequired().HasMaxLength(50);
                 entity.Property(e => e.Status).HasMaxLength(20);
                 entity.Property(e => e.TotalScore).HasColumnType("decimal(5,2)");
@@ -189,13 +189,13 @@ namespace PerformanceEvaluation.Infrastructure.Data
             //Comment config
             modelBuilder.Entity<Comment>(entity =>
             {
-                entity.HasKey(e => e.CommentID);
-                entity.Property(e => e.CommentDescription).IsRequired().HasMaxLength(500);
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.Description).IsRequired().HasMaxLength(500);
                 entity.HasOne(e => e.EvaluationScore)
                     .WithMany(u => u.Comments)
                     .HasForeignKey(e => e.ScoreID)
                     .OnDelete(DeleteBehavior.Cascade);
-                entity.HasIndex(e => e.CommentDescription).IsUnique();
+                entity.HasIndex(e => e.Description).IsUnique();
             });
 
             SeedData(modelBuilder);
@@ -206,29 +206,29 @@ namespace PerformanceEvaluation.Infrastructure.Data
             modelBuilder.Entity<Department>().HasData(
                 new Department
                 {
-                    DepartmentID = 1,
-                    DepartmentName = "Money Transfer Department",
+                    ID = 1,
+                    Name = "Money Transfer Department",
                     IsActive = true,
                     CreatedDate = new DateTime(2025, 7, 1, 0, 0, 0, DateTimeKind.Utc)
                 }
             );
 
-            modelBuilder.Entity<JobRole>().HasData(
+            modelBuilder.Entity<Role>().HasData(
 
-                new JobRole { RoleID = 1, RoleName = "Admin", Description = "System Administrator", IsActive = true },
-                new JobRole { RoleID = 2, RoleName = "Evaluator", Description = "Can evaluate employees", IsActive = true },
-                new JobRole { RoleID = 3, RoleName = "Employee", Description = "Regular employee", IsActive = true },
+                new Role { RoleID = 1, RoleName = "Admin", Description = "System Administrator", IsActive = true },
+                new Role { RoleID = 2, RoleName = "Evaluator", Description = "Can evaluate employees", IsActive = true },
+                new Role { RoleID = 3, RoleName = "Employee", Description = "Regular employee", IsActive = true },
 
-                new JobRole { RoleID = 4, RoleName = "Business Analyst", Description = "Business Analyst", IsActive = true },
-                new JobRole { RoleID = 5, RoleName = "Developer", Description = "Software Developer", IsActive = true },
-                new JobRole { RoleID = 6, RoleName = "QA Specialist", Description = "Quality Assurance Specialist", IsActive = true }
+                new Role { RoleID = 4, RoleName = "Business Analyst", Description = "Business Analyst", IsActive = true },
+                new Role { RoleID = 5, RoleName = "Developer", Description = "Software Developer", IsActive = true },
+                new Role { RoleID = 6, RoleName = "QA Specialist", Description = "Quality Assurance Specialist", IsActive = true }
 
             );
 
             modelBuilder.Entity<User>().HasData(
                 new User
                 {
-                    UserID = 1,
+                    ID = 1,
                     FirstName = "System",
                     LastName = "Admin",
                     Email = "admin@vakifbank.com",
@@ -239,17 +239,17 @@ namespace PerformanceEvaluation.Infrastructure.Data
                 }
             );
 
-            modelBuilder.Entity<UserRole>().HasData(
-                new UserRole
+            modelBuilder.Entity<RoleAssignment>().HasData(
+                new RoleAssignment
                 {
-                    UserRoleID = 1,
+                    ID = 1,
                     UserID = 1,
                     RoleID = 1, // Admin system role
                     AssignedDate = new DateTime(2025, 7, 1, 0, 0, 0, DateTimeKind.Utc)
                 },
-                new UserRole
+                new RoleAssignment
                 {
-                    UserRoleID = 2,
+                    ID = 2,
                     UserID = 1,
                     RoleID = 5, // Developer job role
                     AssignedDate = new DateTime(2025, 7, 1, 0, 0, 0, DateTimeKind.Utc)
