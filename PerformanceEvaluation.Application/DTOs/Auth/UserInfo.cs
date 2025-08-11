@@ -10,8 +10,7 @@ namespace PerformanceEvaluation.Application.DTOs.Auth
         public required string LastName { get; set; }
         public required string Email { get; set; }
         public required int DepartmentID { get; set; }
-        public  ICollection<RoleAssignment> RoleAssignments { get; set; } = new List<RoleAssignment>();
-
+        public List<int> RoleIds { get; set; } = new List<int>();
     }
 
 }

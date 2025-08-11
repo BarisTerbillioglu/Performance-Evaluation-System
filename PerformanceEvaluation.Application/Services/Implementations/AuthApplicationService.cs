@@ -56,7 +56,8 @@ namespace PerformanceEvaluation.Application.Services.Implementations
                     LastName = authResult.User.LastName,
                     Email = authResult.User.Email,
                     DepartmentID = authResult.User.DepartmentID,
-                    RoleAssignments = authResult.User.RoleAssignments
+                    RoleIds = authResult.User.RoleAssignments.Select(ra => ra.RoleID).ToList()
+
                 };
 
                 _logger.LogInformation("Successful login for user: {UserId}", authResult.User.ID);
@@ -65,7 +66,10 @@ namespace PerformanceEvaluation.Application.Services.Implementations
                 {
                     success = true,
                     message = authResult.Message,
-                    User = userInfo
+                    User = userInfo,
+                    AccessToken = accessToken,
+                    RefreshToken = refreshToken,
+                    ExpiresAt = DateTime.UtcNow.AddMinutes(15)
                 };
 
             }
@@ -76,7 +80,9 @@ namespace PerformanceEvaluation.Application.Services.Implementations
                 {
                     success = false,
                     message = "An error occurred during login",
-                    User = null!
+                    User = null!,
+                    AccessToken = null,
+                    RefreshToken = null
                 };
             }
         }
@@ -145,7 +151,8 @@ namespace PerformanceEvaluation.Application.Services.Implementations
                     LastName = user.LastName,
                     Email = user.Email,
                     DepartmentID = user.DepartmentID,
-                    RoleAssignments = user.RoleAssignments
+                    RoleIds = user.RoleAssignments.Select(ra => ra.RoleID).ToList()
+
                 };
                 
             }

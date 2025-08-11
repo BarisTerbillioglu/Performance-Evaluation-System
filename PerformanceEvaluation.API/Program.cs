@@ -23,11 +23,13 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
     options.UseSqlServer(connectionString, sqlOptions =>
     {
         sqlOptions.EnableRetryOnFailure(
-            maxRetryCount: 5,
-            maxRetryDelay: TimeSpan.FromSeconds(30),
+            maxRetryCount: 3,  // Reduced from 5
+            maxRetryDelay: TimeSpan.FromSeconds(10), // Reduced from 30
             errorNumbersToAdd: null);
-        sqlOptions.CommandTimeout(30);
+        sqlOptions.CommandTimeout(120); // Increased from 30
     });
+    options.EnableSensitiveDataLogging(); // Add this for debugging
+    options.LogTo(Console.WriteLine, LogLevel.Information); // Add this for EF logging
 });
 
 // JWT Authentication
@@ -159,7 +161,7 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI(c =>
     {
         c.SwaggerEndpoint("/swagger/v1/swagger.json", "Performance Evaluation API V1");
-        c.RoutePrefix = string.Empty; // Make Swagger UI the default page
+        c.RoutePrefix = "swagger";
     });
 }
 
@@ -172,18 +174,26 @@ app.UseAuthorization();
 
 app.MapControllers();
 
+
 using (var scope = app.Services.CreateScope())
 {
+    var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
+    logger.LogInformation("Starting database migration check...");
+
     var context = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+    logger.LogInformation("Got database context...");
+
     try
     {
-        context.Database.Migrate(); 
+        logger.LogInformation("Attempting to migrate database...");
+        context.Database.Migrate();
+        logger.LogInformation("Database migration completed successfully!");
     }
     catch (Exception ex)
     {
-        var logger = scope.ServiceProvider.GetRequiredService<ILogger<Program>>();
         logger.LogError(ex, "Error applying database migrations");
     }
 }
+
 
 app.Run();

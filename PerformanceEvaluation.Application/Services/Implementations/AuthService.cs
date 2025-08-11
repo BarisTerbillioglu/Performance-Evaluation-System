@@ -33,7 +33,7 @@ namespace PerformanceEvaluation.Application.Services.Implementations
                         .Include(u => u.RoleAssignments)
                         .ThenInclude(ur => ur.Role)
                         .Include(u => u.Department)
-                        .FirstOrDefaultAsync(u => u.Email.Equals(email, StringComparison.CurrentCultureIgnoreCase));
+                        .FirstOrDefaultAsync(u => u.Email.ToLower() == email.ToLower());
                 if (user == null)
                 {
                     _logger.LogWarning("Login attempt with non-existing email: {Email}", email);

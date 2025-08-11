@@ -40,9 +40,10 @@ namespace PerformanceEvaluation.API.Controllers
                 if (!result.success)
                     return Unauthorized(new { message = result.message });
 
-                // Note: Token setting would be handled here in a real implementation
-                // For now, we'll return success without setting cookies
-                // You can implement SetTokenCookies method based on your TokenService
+                if (!string.IsNullOrEmpty(result.AccessToken) && !string.IsNullOrEmpty(result.RefreshToken))
+                {
+                    SetTokenCookies(result.AccessToken, result.RefreshToken);
+                }
 
                 return Ok(result);
             }

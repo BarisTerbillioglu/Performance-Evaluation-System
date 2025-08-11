@@ -77,7 +77,7 @@ namespace PerformanceEvaluation.Infrastructure.Services.Implementations
 
             var claims = new List<Claim>
             {
-                new Claim("ID", user.ID.ToString()),
+                new Claim("userId", user.ID.ToString()),
                 new Claim("tokenType", "refresh"),
                 new Claim(JwtRegisteredClaimNames.Jti, Guid.NewGuid().ToString()),
                 new Claim(JwtRegisteredClaimNames.Iat,
@@ -150,17 +150,17 @@ namespace PerformanceEvaluation.Infrastructure.Services.Implementations
                 var principal = handler.ValidateToken(refreshToken, validationParameters, out SecurityToken validatedToken);
                 var jwt = (JwtSecurityToken)validatedToken;
 
-                var tokenType = jwt.Claims.FirstOrDefault(x => x.Type == "TokenType")?.Value;
+                var tokenType = jwt.Claims.FirstOrDefault(x => x.Type == "tokenType")?.Value;
                 if (tokenType != "refresh")
                 {
-                    _logger.LogWarning("Invalid token type for refresh: {TokenType}", tokenType);
+                    _logger.LogWarning("Invalid token type for refresh: {tokenType}", tokenType);
                     return null;
                 }
 
-                var userIdClaim = jwt.Claims.FirstOrDefault(x => x.Type == "UserId")?.Value;
+                var userIdClaim = jwt.Claims.FirstOrDefault(x => x.Type == "userId")?.Value;
                 if (!int.TryParse(userIdClaim, out int userId))
                 {
-                    _logger.LogWarning("Invalid user ID in refresh token: {UserIdClaim}", userIdClaim);
+                    _logger.LogWarning("Invalid user ID in refresh token: {userIdClaim}", userIdClaim);
                     return null;
                 }
 
@@ -236,10 +236,10 @@ namespace PerformanceEvaluation.Infrastructure.Services.Implementations
                 var principal = handler.ValidateToken(refreshToken, validationParameters, out SecurityToken validatedToken);
                 var jwt = (JwtSecurityToken)validatedToken;
 
-                var userIdClaim = jwt.Claims.FirstOrDefault(x => x.Type == "UserID")?.Value;
+                var userIdClaim = jwt.Claims.FirstOrDefault(x => x.Type == "userId")?.Value;
                 if (int.TryParse(userIdClaim, out int userID))
                 {
-                    _logger.LogInformation("Refresh token invalidated for user {UserID}", userID);
+                    _logger.LogInformation("Refresh token invalidated for user {userId}", userID);
                     return true;
                 }
                 _logger.LogWarning("Attempted to invalidate invalid refresh token");
