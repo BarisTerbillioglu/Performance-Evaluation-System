@@ -1,0 +1,267 @@
+using Microsoft.EntityFrameworkCore;
+using PerformanceEvaluation.Core.Entities;
+
+namespace PerformanceEvaluation.Infrastructure.Data
+{
+    public class ApplicationDbContext : DbContext
+    {
+        public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : base(options)
+        {
+
+        }
+        public DbSet<Department> Departments { get; set; }
+        public DbSet<Criteria> Criteria { get; set; }
+        public DbSet<CriteriaCategory> CriteriaCategories { get; set; }
+        public DbSet<Evaluation> Evaluations { get; set; }
+        public DbSet<EvaluationScore> EvaluationScores { get; set; }
+        public DbSet<EvaluatorAssignment> EvaluatorAssignments { get; set; }
+        public DbSet<Role> Roles { get; set; }
+        public DbSet<RoleCriteriaDescription> RoleCriteriaDescriptions { get; set; }
+        public DbSet<User> Users { get; set; }
+        public DbSet<RoleAssignment> RoleAssignments { get; set; }
+
+        public DbSet<Comment> Comments { get; set; }
+
+        protected override void OnModelCreating(ModelBuilder modelBuilder)
+        {
+            base.OnModelCreating(modelBuilder);
+
+            //Department config
+            modelBuilder.Entity<Department>(entity =>
+            {
+                entity.HasKey(e => e.ID);
+
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasMaxLength(500);
+
+                entity.HasIndex(e => e.Name).IsUnique();
+            });
+
+            //JobRole config
+            modelBuilder.Entity<Role>(entity =>
+            {
+                entity.HasKey(e => e.ID);
+
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+
+                entity.HasIndex(e => e.Name).IsUnique();
+            });
+
+            //User config
+            modelBuilder.Entity<User>(entity =>
+            {
+                entity.HasKey(e => e.UserID);
+
+                entity.Property(e => e.FirstName).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.LastName).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Email).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.PasswordHash);
+
+                entity.HasIndex(e => e.Email).IsUnique();
+
+                //One to many relation with Department
+                entity.HasOne(e => e.Department)
+                    .WithMany(d => d.Users)
+                    .HasForeignKey(e => e.DepartmentID)
+                    .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            //UserRole config
+            modelBuilder.Entity<RoleAssignment>(entity =>
+            {
+                entity.HasKey(e => e.ID);
+
+                entity.HasOne(e => e.User)
+                    .WithMany(u => u.RoleAssignments)
+                    .HasForeignKey(e => e.UserID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Role)
+                    .WithMany(u => u.RoleAssignments)
+                    .HasForeignKey(e => e.RoleID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => new { e.UserID, e.RoleID }).IsUnique();
+            });
+
+            //Criteria config
+            modelBuilder.Entity<Criteria>(entity =>
+            {
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.BaseDescription).HasMaxLength(500);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.HasOne(e => e.CriteriaCategory)
+                    .WithMany(r => r.Criteria)
+                    .HasForeignKey(e => e.CategoryID)
+                    .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            //CriteriaCategory config
+            modelBuilder.Entity<CriteriaCategory>(entity =>
+            {
+                entity.HasKey(e => e.CategoryID);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.Weight).HasColumnType("decimal(5,2)");
+                entity.HasIndex(e => e.Name).IsUnique();
+            });
+
+            //RoleCriteriaDescription config
+            modelBuilder.Entity<RoleCriteriaDescription>(entity =>
+            {
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.Description).HasMaxLength(500);
+                entity.Property(e => e.Example).HasMaxLength(500);
+
+                entity.HasOne(e => e.Criteria)
+                    .WithMany(u => u.RoleCriteriaDescriptions)
+                    .HasForeignKey(e => e.CriteriaID)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.HasOne(e => e.Role)
+                    .WithMany(u => u.RoleCriteriaDescriptions)
+                    .HasForeignKey(e => e.RoleID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => new { e.CriteriaID, e.RoleID });
+            });
+
+            //Evaluation config
+            modelBuilder.Entity<Evaluation>(entity =>
+            {
+                entity.HasKey(e => e.EvaluationID);
+                entity.Property(e => e.Period).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.Status).HasMaxLength(20);
+                entity.Property(e => e.TotalScore).HasColumnType("decimal(5,2)");
+                entity.Property(e => e.GeneralComments).HasMaxLength(1000);
+
+                entity.HasOne(e => e.Evaluator)
+                    .WithMany(u => u.EvaluatorEvaluations)
+                    .HasForeignKey(e => e.EvaluatorID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Employee)
+                .WithMany(u => u.EmployeeEvaluations)
+                .HasForeignKey(e => e.EmployeeID)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            });
+
+            //EvaluationScore config
+            modelBuilder.Entity<EvaluationScore>(entity =>
+            {
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.Score).IsRequired();
+
+                entity.HasOne(e => e.Criteria)
+                    .WithMany(u => u.EvaluationScores)
+                    .HasForeignKey(e => e.CriteriaID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Evaluation)
+                .WithMany(u => u.EvaluationScores)
+                .HasForeignKey(e => e.EvaluationID)
+                .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasIndex(e => new { e.CriteriaID, e.EvaluationID }).IsUnique();
+            });
+
+            //EvaluationAssignment config
+            modelBuilder.Entity<EvaluatorAssignment>(entity =>
+            {
+                entity.HasKey(e => e.ID);
+
+                entity.HasOne(e => e.Evaluator)
+                    .WithMany(u => u.EvaluatorAssignments)
+                    .HasForeignKey(e => e.EvaluatorID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+                entity.HasOne(e => e.Team)
+                    .WithMany(u => u.EvaluatorAssignments)
+                    .HasForeignKey(e => e.TeamID)
+                    .OnDelete(DeleteBehavior.Restrict);
+
+
+                entity.HasIndex(e => new { e.TeamID, e.EvaluatorID }).IsUnique();
+            });
+
+            //Comment config
+            modelBuilder.Entity<Comment>(entity =>
+            {
+                entity.HasKey(e => e.CommentID);
+                entity.Property(e => e.CommentDescription).IsRequired().HasMaxLength(500);
+                entity.HasOne(e => e.EvaluationScore)
+                    .WithMany(u => u.Comments)
+                    .HasForeignKey(e => e.ScoreID)
+                    .OnDelete(DeleteBehavior.Cascade);
+                entity.HasIndex(e => e.CommentDescription).IsUnique();
+            });
+
+            SeedData(modelBuilder);
+        }
+
+        private void SeedData(ModelBuilder modelBuilder)
+        {
+            modelBuilder.Entity<Department>().HasData(
+                new Department
+                {
+                    DepartmentID = 1,
+                    DepartmentName = "Money Transfer Department",
+                    IsActive = true,
+                    CreatedDate = new DateTime(2025, 7, 1, 0, 0, 0, DateTimeKind.Utc)
+                }
+            );
+
+            modelBuilder.Entity<JobRole>().HasData(
+
+                new JobRole { RoleID = 1, RoleName = "Admin", Description = "System Administrator", IsActive = true },
+                new JobRole { RoleID = 2, RoleName = "Evaluator", Description = "Can evaluate employees", IsActive = true },
+                new JobRole { RoleID = 3, RoleName = "Employee", Description = "Regular employee", IsActive = true },
+
+                new JobRole { RoleID = 4, RoleName = "Business Analyst", Description = "Business Analyst", IsActive = true },
+                new JobRole { RoleID = 5, RoleName = "Developer", Description = "Software Developer", IsActive = true },
+                new JobRole { RoleID = 6, RoleName = "QA Specialist", Description = "Quality Assurance Specialist", IsActive = true }
+
+            );
+
+            modelBuilder.Entity<User>().HasData(
+                new User
+                {
+                    UserID = 1,
+                    FirstName = "System",
+                    LastName = "Admin",
+                    Email = "admin@vakifbank.com",
+                    PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin123!"),
+                    DepartmentID = 1,
+                    IsActive = true,
+                    CreatedDate = new DateTime(2025, 7, 1, 0, 0, 0, DateTimeKind.Utc)
+                }
+            );
+
+            modelBuilder.Entity<UserRole>().HasData(
+                new UserRole
+                {
+                    UserRoleID = 1,
+                    UserID = 1,
+                    RoleID = 1, // Admin system role
+                    AssignedDate = new DateTime(2025, 7, 1, 0, 0, 0, DateTimeKind.Utc)
+                },
+                new UserRole
+                {
+                    UserRoleID = 2,
+                    UserID = 1,
+                    RoleID = 5, // Developer job role
+                    AssignedDate = new DateTime(2025, 7, 1, 0, 0, 0, DateTimeKind.Utc)
+                }
+            );
+
+        }
+        protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+        {
+            optionsBuilder.ConfigureWarnings(warnings => 
+                warnings.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+        }
+    }
+}
+
