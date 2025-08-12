@@ -34,6 +34,10 @@ namespace PerformanceEvaluation.Infrastructure.Services.Implementations
             var issuer = jwtSettings["Issuer"];
             var audience = jwtSettings["Audience"];
 
+            if (string.IsNullOrEmpty(secretKey))
+            {
+                throw new InvalidOperationException("JWT SecretKey is not configured in appsettings.json");
+            }
             var keyBytes = Encoding.UTF8.GetBytes(secretKey);
             var key = new SymmetricSecurityKey(keyBytes);
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -72,6 +76,10 @@ namespace PerformanceEvaluation.Infrastructure.Services.Implementations
         {
             var jwtSettings = _configuration.GetSection("JwtSettings");
             var secretKey = jwtSettings["SecretKey"];
+            if (string.IsNullOrEmpty(secretKey))
+            {
+                throw new InvalidOperationException("JWT SecretKey is not configured in appsettings.json");
+            }
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
             var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 

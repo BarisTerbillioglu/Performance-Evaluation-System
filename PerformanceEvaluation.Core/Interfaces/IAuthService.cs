@@ -36,7 +36,7 @@ namespace PerformanceEvaluation.Core.Interfaces
             /// </summary>
             /// <param name="email">Attempted email</param>
             /// <param name="attemptTime">Attempt timestamp</param>
-            Task RecordFailedLoginAsync(string email, DateTime attemptTime);
+            void RecordFailedLogin(string email, DateTime attemptTime);
 
             /// <summary>
             /// Checks if user account should be locked due to failed attempts

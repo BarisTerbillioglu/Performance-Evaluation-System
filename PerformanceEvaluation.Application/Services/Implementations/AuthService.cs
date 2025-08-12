@@ -52,7 +52,7 @@ namespace PerformanceEvaluation.Application.Services.Implementations
                 if (!BCrypt.Net.BCrypt.Verify(password, user.PasswordHash))
                 {
                     _logger.LogWarning("Failed login attempt for email: {Email}", email);
-                    await RecordFailedLoginAsync(email, DateTime.UtcNow);
+                    RecordFailedLogin(email, DateTime.UtcNow);
                     return AuthResult.Failure("Invalid email or password", AuthFailureReason.InvalidCredentials);
                 }
 
@@ -103,7 +103,7 @@ namespace PerformanceEvaluation.Application.Services.Implementations
             }
         }
 
-        public async Task RecordFailedLoginAsync(string email, DateTime attemptTime)
+        public void RecordFailedLogin(string email, DateTime attemptTime)
         {
             try
             {
