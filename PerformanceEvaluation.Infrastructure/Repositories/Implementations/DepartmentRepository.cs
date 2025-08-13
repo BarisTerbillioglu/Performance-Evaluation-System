@@ -12,7 +12,9 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
         public DepartmentRepository(ApplicationDbContext context, ILogger<DepartmentRepository> logger) 
             : base(context, logger) { }
 
+#pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
         public async Task<bool> CanAccessAsync(int id, ClaimsPrincipal user)
+#pragma warning restore CS1998 // Async method lacks 'await' operators and will run synchronously
         {
             if (IsAdmin(user)) return true;
 
