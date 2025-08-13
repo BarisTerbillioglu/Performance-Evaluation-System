@@ -176,6 +176,11 @@ namespace PerformanceEvaluation.Infrastructure.Data
                     .WithMany(u => u.EvaluatorAssignments)
                     .HasForeignKey(e => e.EvaluatorID)
                     .OnDelete(DeleteBehavior.Restrict);
+                
+                entity.HasOne(e => e.Employee)
+                    .WithMany(u => u.EvaluatorAssignments)
+                    .HasForeignKey(e => e.EmployeeID)
+                    .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasOne(e => e.Team)
                     .WithMany(u => u.EvaluatorAssignments)
