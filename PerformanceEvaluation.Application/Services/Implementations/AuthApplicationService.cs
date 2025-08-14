@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PerformanceEvaluation.Application.DTOs.Auth;
 using PerformanceEvaluation.Application.Services.Interfaces;
-using PerformanceEvaluation.Core.Entities;
 using PerformanceEvaluation.Core.Interfaces;
 using PerformanceEvaluation.Infrastructure.Data;
 using PerformanceEvaluation.Infrastructure.Services.Interfaces;
