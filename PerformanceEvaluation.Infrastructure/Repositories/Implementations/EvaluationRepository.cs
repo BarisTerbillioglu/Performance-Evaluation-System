@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using PerformanceEvaluation.Core.Entities;
 using PerformanceEvaluation.Core.Enums;
@@ -86,8 +87,8 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
         public async Task<bool> CanEvaluateEmployeeAsync(int evaluatorId, int employeeId)
         {
             return await _context.EvaluatorAssignments
-                    .AnyAsync(ea => ea.EvaluatorID == evaluatorId && 
-                                   ea.EmployeeID == employeeId && 
+                    .AnyAsync(ea => ea.EvaluatorID == evaluatorId &&
+                                   ea.EmployeeID == employeeId &&
                                    ea.IsActive);
         }
 
@@ -316,6 +317,317 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                 evaluationId, oldStatus, status, GetUserId(user));
 
             return true;
+        }
+        
+        /// <summary>
+        /// Updates basic evaluation information using primitive parameters
+        /// </summary>
+        /// <param name="evaluationId">ID of evaluation to update</param>
+        /// <param name="period">New period value (optional)</param>
+        /// <param name="startDate">New start date (optional)</param>
+        /// <param name="endDate">New end date (optional)</param>
+        /// <param name="generalComments">New general comments (optional)</param>
+        /// <param name="user">Requesting user claims</param>
+        /// <returns>Updated evaluation entity or null if not found/accessible</returns>
+        public async Task<Evaluation?> UpdateBasicInfoAsync(
+            int evaluationId, 
+            string? period, 
+            DateTime? startDate, 
+            DateTime? endDate, 
+            string? generalComments, 
+            ClaimsPrincipal user)
+        {
+            try
+            {
+                // Check if user can access this evaluation
+                if (!await CanAccessAsync(evaluationId, user))
+                {
+                    _logger.LogWarning("User {UserId} denied access to update evaluation {EvaluationId}", 
+                        GetUserId(user), evaluationId);
+                    return null;
+                }
+
+                var evaluation = await _dbSet.FindAsync(evaluationId);
+                if (evaluation == null) 
+                {
+                    _logger.LogWarning("Evaluation {EvaluationId} not found for update", evaluationId);
+                    return null;
+                }
+
+                // Check if evaluation is editable
+                if (evaluation.Status == EvaluationStatus.Completed.ToString() || 
+                    evaluation.Status == EvaluationStatus.Approved.ToString())
+                {
+                    if (!IsAdmin(user))
+                    {
+                        _logger.LogWarning("Non-admin user {UserId} attempted to modify completed evaluation {EvaluationId}", 
+                            GetUserId(user), evaluationId);
+                        throw new InvalidOperationException("Cannot modify completed evaluation");
+                    }
+                }
+
+                // Update only provided fields (null means don't update)
+                if (!string.IsNullOrWhiteSpace(period))
+                {
+                    evaluation.Period = period.Trim();
+                }
+
+                if (startDate.HasValue)
+                {
+                    evaluation.StartDate = startDate.Value;
+                }
+
+                if (endDate.HasValue)
+                {
+                    evaluation.EndDate = endDate.Value;
+                }
+
+                if (generalComments != null) // Allow empty string to clear comments
+                {
+                    evaluation.GeneralComments = generalComments.Trim();
+                }
+
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Evaluation basic info updated: ID {EvaluationId} by User {UserId}", 
+                    evaluationId, GetUserId(user));
+
+                return evaluation;
+            }
+            catch (InvalidOperationException)
+            {
+                // Re-throw business rule violations
+                throw;
+            }
+            catch (Exception ex)
+            {
+                var userId = GetUserId(user);
+                _logger.LogError(ex, "Error updating basic info for evaluation {EvaluationId} by user {UserId}", 
+                    evaluationId, userId);
+                throw;
+            }
+        }
+
+        public async Task<bool> UpdateTotalScoreAsync(int evaluationId, decimal totalScore)
+        {
+            var evaluation = await _dbSet.FindAsync(evaluationId);
+            if (evaluation == null) return false;
+
+            evaluation.TotalScore = totalScore;
+            await _context.SaveChangesAsync();
+
+            _logger.LogInformation("Evaluation total score updated: ID {EvaluationId}, Score: {TotalScore}",
+                evaluationId, totalScore);
+
+            return true;
+        }
+        public async Task<Evaluation?> GetEvaluationForSummaryAsync(int evaluationId, ClaimsPrincipal user)
+        {
+            if (!await CanAccessAsync(evaluationId, user))
+            {
+                return null;
+            }
+
+            return await _dbSet
+                .Include(e => e.Employee)
+                .Include(e => e.Evaluator)
+                .Include(e => e.EvaluationScores) // Just count, no details
+                .FirstOrDefaultAsync(e => e.ID == evaluationId);
+        }
+
+        public async Task<IEnumerable<Evaluation>> GetRecentEvaluationsAsync(ClaimsPrincipal user, int limit = 10)
+        {
+            var query = GetBaseEvaluationQuery();
+
+            if (IsEvaluator(user))
+            {
+                var evaluatorId = GetUserId(user);
+                query = query.Where(e => e.EvaluatorID == evaluatorId);
+            }
+            else if (IsEmployee(user))
+            {
+                var employeeId = GetUserId(user);
+                query = query.Where(e => e.EmployeeID == employeeId);
+            }
+
+            return await query
+                .OrderByDescending(e => e.CreatedDate)
+                .Take(limit)
+                .ToListAsync();
+        }
+
+        public async Task<bool> IsEvaluationEditableAsync(int evaluationId, ClaimsPrincipal user)
+        {
+            if (!await CanAccessAsync(evaluationId, user))
+            {
+                return false;
+            }
+
+            var evaluation = await _dbSet
+                .Where(e => e.ID == evaluationId)
+                .Select(e => e.Status)
+                .FirstOrDefaultAsync();
+
+            if (string.IsNullOrEmpty(evaluation))
+            {
+                return false;
+            }
+
+            if (evaluation == EvaluationStatus.Completed.ToString() ||
+                evaluation == EvaluationStatus.Approved.ToString())
+            {
+                return IsAdmin(user);
+            }
+
+            return true;
+        }
+
+        public async Task<Dictionary<string, int>> GetEvaluationCountsByStatusAsync(ClaimsPrincipal user)
+        {
+            var query = _dbSet.AsQueryable();
+
+            // Apply role filtering
+            if (IsEvaluator(user))
+            {
+                var evaluatorId = GetUserId(user);
+                query = query.Where(e => e.EvaluatorID == evaluatorId);
+            }
+            else if (IsEmployee(user))
+            {
+                var employeeId = GetUserId(user);
+                query = query.Where(e => e.EmployeeID == employeeId);
+            }
+            // Admin sees all - no additional filtering
+
+            return await query
+                .GroupBy(e => e.Status)
+                .ToDictionaryAsync(g => g.Key, g => g.Count());
+        }
+
+        /// <summary>
+        /// Creates new evaluation using primitive parameters
+        /// </summary>
+        /// <param name="employeeId">ID of employee being evaluated</param>
+        /// <param name="period">Evaluation period</param>
+        /// <param name="startDate">Evaluation start date</param>
+        /// <param name="endDate">Evaluation end date</param>
+        /// <param name="user">Requesting user claims</param>
+        /// <returns>Created evaluation entity</returns>
+        public async Task<Evaluation> CreateEvaluationAsync(
+            int employeeId, 
+            string period, 
+            DateTime startDate, 
+            DateTime endDate, 
+            ClaimsPrincipal user)
+        {
+            try
+            {
+                var evaluatorId = GetUserId(user);
+                
+                // Validate evaluator can evaluate this employee
+                var canEvaluate = await CanEvaluateEmployeeAsync(evaluatorId, employeeId);
+                if (!canEvaluate)
+                {
+                    _logger.LogWarning("Evaluator {EvaluatorId} attempted to evaluate employee {EmployeeId} without permission", 
+                        evaluatorId, employeeId);
+                    throw new UnauthorizedAccessException("Cannot evaluate this employee");
+                }
+
+                var evaluation = new Evaluation
+                {
+                    EvaluatorID = evaluatorId,
+                    EmployeeID = employeeId,
+                    Period = period.Trim(),
+                    StartDate = startDate,
+                    EndDate = endDate,
+                    Status = EvaluationStatus.Draft.ToString(),
+                    TotalScore = 0,
+                    CreatedDate = DateTime.UtcNow
+                };
+
+                await _dbSet.AddAsync(evaluation);
+                await _context.SaveChangesAsync();
+                
+                _logger.LogInformation("Evaluation created: ID {EvaluationId} by User {UserId} for Employee {EmployeeId}", 
+                    evaluation.ID, evaluatorId, employeeId);
+
+                return evaluation;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Re-throw authorization errors
+                throw;
+            }
+            catch (Exception ex)
+            {
+                var evaluatorId = GetUserId(user);
+                _logger.LogError(ex, "Error creating evaluation. Evaluator: {EvaluatorId}, Employee: {EmployeeId}", 
+                    evaluatorId, employeeId);
+                throw;
+            }
+        }
+
+        /// <summary>
+        /// Gets evaluation with scores for form display (no comments)
+        /// </summary>
+        public async Task<Evaluation?> GetEvaluationWithScoresAsync(int evaluationId, ClaimsPrincipal user)
+        {
+            if (!await CanAccessAsync(evaluationId, user))
+            {
+                return null;
+            }
+
+            return await _dbSet
+                .Include(e => e.Employee)
+                .Include(e => e.Evaluator)
+                .Include(e => e.EvaluationScores)
+                    .ThenInclude(es => es.Criteria)
+                        .ThenInclude(c => c.CriteriaCategory)
+                .FirstOrDefaultAsync(e => e.ID == evaluationId);
+        }
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            try
+            {
+                var transaction = await _context.Database.BeginTransactionAsync();
+                
+                _logger.LogDebug("Database transaction started for evaluation operations");
+                
+                return transaction;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error starting database transaction");
+                throw;
+            }
+        }
+        
+        private IQueryable<Evaluation> GetBaseEvaluationQuery()
+        {
+            return _dbSet
+                .Include(e => e.Evaluator)
+                .Include(e => e.Employee)
+                    .ThenInclude(emp => emp.Department);
+        }
+
+        private IQueryable<Evaluation> GetDetailedEvaluationQuery()
+        {
+            return _dbSet
+                .Include(e => e.Evaluator)
+                .Include(e => e.Employee)
+                    .ThenInclude(emp => emp.Department)
+                .Include(e => e.EvaluationScores)
+                    .ThenInclude(es => es.Criteria)
+                        .ThenInclude(c => c.CriteriaCategory);
+        }
+
+        private async Task<List<int>> GetTeamMemberIdsAsync(int evaluatorId)
+        {
+            return await _context.EvaluatorAssignments
+                .Where(ea => ea.EvaluatorID == evaluatorId && ea.IsActive)
+                .Select(ea => ea.EmployeeID)
+                .Distinct()
+                .ToListAsync();
         }
     }
 }
