@@ -10,6 +10,8 @@ using PerformanceEvaluation.Application.Services.Interfaces;
 using PerformanceEvaluation.Application.Services.Implementations;
 using PerformanceEvaluation.Infrastructure.Services.Interfaces;
 using PerformanceEvaluation.Infrastructure.Services.Implementations;
+using PerformanceEvaluation.Infrastructure.Repositories.Interfaces;
+using PerformanceEvaluation.Infrastructure.Repositories.Implementation;
 
 
 var builder = WebApplication.CreateBuilder(args);
@@ -145,9 +147,26 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 
 // Infrastructure Services
 builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<IDepartmentRepository, DepartmentRepository>();
+builder.Services.AddScoped<IRoleRepository, RoleRepository>();
+builder.Services.AddScoped<ICriteriaRepository, CriteriaRepository>();
+builder.Services.AddScoped<ICriteriaCategoryRepository, CriteriaCategoryRepository>();
+builder.Services.AddScoped<IEvaluationRepository, EvaluationRepository>();
+builder.Services.AddScoped<IEvaluationScoreRepository, EvaluationScoreRepository>();
+builder.Services.AddScoped<ICommentRepository, CommentRepository>();
+builder.Services.AddScoped<ITeamRepository, TeamRepository>();
+builder.Services.AddScoped<IEvaluatorAssignmentRepository, EvaluatorAssignmentRepository>();
 
 // Application Services
 builder.Services.AddScoped<IAuthApplicationService, AuthApplicationService>();
+builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IDepartmentService, DepartmentService>();
+builder.Services.AddScoped<IRoleService, RoleService>();
+builder.Services.AddScoped<ICriteriaService, CriteriaService>();
+builder.Services.AddScoped<ICriteriaCategoryService, CriteriaCategoryService>();
+builder.Services.AddScoped<IEvaluationService, EvaluationService>();
+builder.Services.AddScoped<ITeamService, TeamService>();
 
 // Register application services
 // TODO: Add your service registrations here

@@ -3,10 +3,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using PerformanceEvaluation.Core.Entities;
 using PerformanceEvaluation.Infrastructure.Data;
-using PerformanceEvaluation.Infrastructure.Repositories.Implementation;
 using PerformanceEvaluation.Infrastructure.Repositories.Interfaces;
 
-namespace PerformanceEvaluation.Infrastructure.Repositories
+namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
 {
     public class CommentRepository : BaseRepository<Comment>, ICommentRepository
     {

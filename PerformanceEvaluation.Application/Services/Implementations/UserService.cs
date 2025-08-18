@@ -1,6 +1,5 @@
 using System.Security.Claims;
 using Microsoft.Extensions.Logging;
-using PerformanceEvaluation.Application.DTOs.Evaluation;
 using PerformanceEvaluation.Application.DTOs.Role;
 using PerformanceEvaluation.Application.DTOs.Team;
 using PerformanceEvaluation.Application.DTOs.User;
@@ -16,6 +15,8 @@ namespace PerformanceEvaluation.Application.Services.Implementations
         private readonly IEvaluationRepository _evaluationRepository;
         private readonly IUserRepository _userRepository;
         private readonly IRoleRepository _roleRepository;
+        private readonly IEvaluatorAssignmentRepository _evaluatorAssignmentRepository;
+        private readonly ITeamRepository _teamRepository;
         private readonly ILogger<UserService> _logger;
 
         public UserService(
@@ -23,12 +24,16 @@ namespace PerformanceEvaluation.Application.Services.Implementations
             IDepartmentRepository departmentRepository,
             IRoleRepository roleRepository,
             IUserRepository userRepository,
+            IEvaluatorAssignmentRepository evaluatorAssignmentRepository,
+            ITeamRepository teamRepository,
             ILogger<UserService> logger)
         {
             _departmentRepository = departmentRepository;
             _evaluationRepository = evaluationRepository;
             _roleRepository = roleRepository;
             _userRepository = userRepository;
+            _evaluatorAssignmentRepository = evaluatorAssignmentRepository;
+            _teamRepository = teamRepository;
             _logger = logger;
         }
 
@@ -36,153 +41,316 @@ namespace PerformanceEvaluation.Application.Services.Implementations
         {
             if (!user.IsInRole("Admin"))
             {
-                throw new UnauthorizedAccessException("Only evaluators and admins can create evaluations");
+                throw new UnauthorizedAccessException("Only administrators can create users");
             }
 
-            var createdUser = await _userRepository.GetByEmailAsync(request.Email);
-            if (createdUser != null)
+            var existingUser = await _userRepository.GetByEmailAsync(request.Email);
+            if (existingUser != null)
             {
-                throw new ArgumentException("User already exists!");
+                throw new ArgumentException("User with this email already exists");
             }
-            var newUser = await _userRepository.CreateUserAsync(request.FirstName, request.LastName, request.Email, request.PasswordHash, request.DepartmentId, user);
 
-            return new UserDto
+            // Validate department exists
+            var department = await _departmentRepository.GetByIdAsync(request.DepartmentId);
+            if (department == null)
             {
-                ID = newUser.ID,
-                FirstName = newUser.FirstName,
-                LastName = newUser.LastName,
-                Email = newUser.Email,
-                PasswordHash = newUser.PasswordHash,
-                DepartmentId = newUser.DepartmentID,
-                IsActive = newUser.IsActive,
-                CreatedDate = newUser.CreatedDate,
-                UpdatedDate = newUser.UpdatedDate
-            };
+                throw new ArgumentException("Department not found");
+            }
+
+            var newUser = await _userRepository.CreateUserAsync(
+                request.FirstName, 
+                request.LastName, 
+                request.Email, 
+                request.PasswordHash, 
+                request.DepartmentId, 
+                user);
+
+            return MapToUserDto(newUser);
+        }
+
+        public async Task<UserDto?> UpdateUserAsync(int id, UpdateUserRequest request, ClaimsPrincipal user)
+        {
+            if (!user.IsInRole("Admin"))
+            {
+                throw new UnauthorizedAccessException("Only administrators can update users");
+            }
+
+            var targetUser = await _userRepository.GetByIdAsync(id);
+            if (targetUser == null)
+            {
+                return null;
+            }
+
+            targetUser.FirstName = request.FirstName?.Trim() ?? targetUser.FirstName;
+            targetUser.LastName = request.LastName?.Trim() ?? targetUser.LastName;
+            targetUser.IsActive = request.IsActive ?? targetUser.IsActive;
+            targetUser.UpdatedDate = DateTime.UtcNow;
+
+            if (request.DepartmentId.HasValue)
+            {
+                var department = await _departmentRepository.GetByIdAsync(request.DepartmentId.Value);
+                if (department == null)
+                {
+                    throw new ArgumentException("Department not found");
+                }
+                targetUser.DepartmentID = request.DepartmentId.Value;
+            }
+
+            if (!string.IsNullOrWhiteSpace(request.Email) && request.Email != targetUser.Email)
+            {
+                var existingUser = await _userRepository.GetByEmailAsync(request.Email);
+                if (existingUser != null)
+                {
+                    throw new ArgumentException("User with this email already exists");
+                }
+                targetUser.Email = request.Email.Trim();
+            }
+
+            var updatedUser = await _userRepository.UpdateAsync(targetUser);
+
+            _logger.LogInformation("User updated: ID {UserId} by Admin {AdminId}", 
+                id, GetUserId(user));
+
+            return MapToUserDto(updatedUser);
         }
 
         public async Task<bool> DeleteUserAsync(int id, ClaimsPrincipal user)
         {
             if (!user.IsInRole("Admin"))
             {
-                throw new UnauthorizedAccessException("Only administrators can delete evaluations");
+                throw new UnauthorizedAccessException("Only administrators can delete users");
             }
 
-            var deletedUser = await _userRepository.GetByIdAsync(id);
-
-            if (deletedUser == null)
+            var targetUser = await _userRepository.GetByIdAsync(id);
+            if (targetUser == null)
             {
                 return false;
+            }
+
+            // Check if user has evaluations
+            var evaluations = await _evaluationRepository.GetAllAsync(user);
+            var userEvaluations = evaluations.Where(e => e.EvaluatorID == id || e.EmployeeID == id);
+            
+            if (userEvaluations.Any())
+            {
+                throw new InvalidOperationException("Cannot delete user with existing evaluations");
             }
 
             var result = await _userRepository.DeleteAsync(id);
 
             if (result)
             {
-                _logger.LogInformation("User deleted: ID {userId} by User {UserId}",
+                _logger.LogInformation("User deleted: ID {UserId} by Admin {AdminId}", 
                     id, GetUserId(user));
             }
 
-            return result; 
-        }
-
-        public async Task<IEnumerable<EmployeeListDto>> GetEmployeeListAsync(ClaimsPrincipal user)
-        {
-            var users = await _userRepository.GetAllAsync(user);
-
-            return users.Select(e => new EmployeeListDto
-            {
-                ID = e.ID,
-                FirstName = e.FirstName,
-                LastName = e.LastName,
-                Email = e.Email,
-                TeamId = e.EvaluatorAssignments.Where(ea => ea.EmployeeID == e.ID).Select(t => t.ID).ToList(),
-                DepartmentId = e.DepartmentID,
-                IsActive = e.IsActive,
-                CreatedDate = e.CreatedDate
-            });
-        }
-
-        public async Task<IEnumerable<EmployeeListDto>> GetEmployeeListInADepartmentAsync(ClaimsPrincipal user, int id)
-        {
-            var users = await _userRepository.GetAllAsync(user);
-
-            return users.Select(e => new EmployeeListDto
-            {
-                ID = e.ID,
-                FirstName = e.FirstName,
-                LastName = e.LastName,
-                Email = e.Email,
-                TeamId = e.EvaluatorAssignments.Where(ea => ea.EmployeeID == e.ID).Select(t => t.ID).ToList(),
-                DepartmentId = e.DepartmentID,
-                IsActive = e.IsActive,
-                CreatedDate = e.CreatedDate
-            }).Where(e => e.DepartmentId == id);
-        }
-
-        public async Task<IEnumerable<EvaluatorListDto>> GetEvaluatorListAsync(ClaimsPrincipal user)
-        {
-            var users = await _userRepository.GetAllAsync(user);
-
-            return users.Select(e => new EvaluatorListDto
-            {
-                ID = e.ID,
-                FirstName = e.FirstName,
-                LastName = e.LastName,
-                Email = e.Email,
-                TeamId = e.EvaluatorAssignments.Where(ea => ea.EvaluatorID == e.ID).Select(t => t.ID).ToList(),
-                DepartmentId = e.DepartmentID,
-                IsActive = e.IsActive,
-                CreatedDate = e.CreatedDate
-            });
-        }
-
-        public Task<IEnumerable<EvaluationDto>> GetUserEvaluationsAsync(ClaimsPrincipal user, int id)
-        {
-            throw new NotImplementedException();
+            return result;
         }
 
         public async Task<IEnumerable<UserListDto>> GetUserListAsync(ClaimsPrincipal user)
         {
             var users = await _userRepository.GetAllAsync(user);
+            return users.Select(MapToUserListDto);
+        }
 
-            return users.Select(e => new UserListDto
+        public async Task<IEnumerable<UserListDto>> GetUserListInATeamAsync(int teamId, ClaimsPrincipal user)
+        {
+            var team = await _teamRepository.GetByIdAsync(teamId, user);
+            if (team == null)
+            {
+                throw new ArgumentException("Team not found or not accessible");
+            }
+
+            var assignments = await _evaluatorAssignmentRepository.GetTeamAssignmentsAsync(teamId);
+            var userIds = assignments.Where(a => a.IsActive)
+                .SelectMany(a => new[] { a.EvaluatorID, a.EmployeeID })
+                .Distinct()
+                .ToList();
+
+            var allUsers = await _userRepository.GetAllAsync(user);
+            var teamUsers = allUsers.Where(u => userIds.Contains(u.ID));
+
+            return teamUsers.Select(MapToUserListDto);
+        }
+
+        public async Task<IEnumerable<EvaluatorListDto>> GetEvaluatorListAsync(ClaimsPrincipal user)
+        {
+            var users = await _userRepository.GetAllAsync(user);
+            var evaluators = users.Where(u => u.RoleAssignments.Any(ra => ra.RoleID == 2)); // Evaluator role
+
+            return evaluators.Select(e => new EvaluatorListDto
             {
                 ID = e.ID,
                 FirstName = e.FirstName,
                 LastName = e.LastName,
                 Email = e.Email,
-                TeamId = e.EvaluatorAssignments.Where(ea => ea.EvaluatorID == e.ID).Select(t => t.ID).ToList(),
-                RoleId = e.RoleAssignments.Where(ra => ra.UserID == e.ID && ra.RoleID > 3).Select(ra => ra.RoleID).ToList(),
+                TeamId = e.EvaluatorAssignments.Where(ea => ea.EvaluatorID == e.ID && ea.IsActive)
+                    .Select(ea => ea.TeamID).Distinct().ToList(),
                 DepartmentId = e.DepartmentID,
                 IsActive = e.IsActive,
-                CreatedDate = e.CreatedDate
+                CreatedDate = e.CreatedDate,
+                UpdatedDate = e.UpdatedDate
             });
         }
 
-        public Task<IEnumerable<UserListDto>> GetUserListInATeamAsync(ClaimsPrincipal user)
+        public async Task<IEnumerable<EmployeeListDto>> GetEmployeeListAsync(ClaimsPrincipal user)
         {
-            throw new NotImplementedException();
+            var users = await _userRepository.GetAllAsync(user);
+            var employees = users.Where(u => u.RoleAssignments.Any(ra => ra.RoleID == 3)); // Employee role
+
+            return employees.Select(e => new EmployeeListDto
+            {
+                ID = e.ID,
+                FirstName = e.FirstName,
+                LastName = e.LastName,
+                Email = e.Email,
+                TeamId = e.EmployeeAssignments.Where(ea => ea.EmployeeID == e.ID && ea.IsActive)
+                    .Select(ea => ea.TeamID).Distinct().ToList(),
+                DepartmentId = e.DepartmentID,
+                IsActive = e.IsActive,
+                CreatedDate = e.CreatedDate,
+                UpdatedDate = e.UpdatedDate
+            });
         }
 
-        public Task<SystemRoleDto> UpdateSystemRoleAsync(UpdateSystemRoleRequest request, ClaimsPrincipal user)
+        public async Task<IEnumerable<EmployeeListDto>> GetEmployeeListInADepartmentAsync(int departmentId, ClaimsPrincipal user)
         {
-            throw new NotImplementedException();
+            var users = await _userRepository.GetUsersByDepartmentAsync(departmentId, user);
+            var employees = users.Where(u => u.RoleAssignments.Any(ra => ra.RoleID == 3)); // Employee role
+
+            return employees.Select(e => new EmployeeListDto
+            {
+                ID = e.ID,
+                FirstName = e.FirstName,
+                LastName = e.LastName,
+                Email = e.Email,
+                TeamId = e.EmployeeAssignments.Where(ea => ea.EmployeeID == e.ID && ea.IsActive)
+                    .Select(ea => ea.TeamID).Distinct().ToList(),
+                DepartmentId = e.DepartmentID,
+                IsActive = e.IsActive,
+                CreatedDate = e.CreatedDate,
+                UpdatedDate = e.UpdatedDate
+            });
         }
 
-        public Task<JobRoleDto> UpdateSystemRoleAsync(UpdateJobRoleRequest request, ClaimsPrincipal user)
+        public async Task<UserWithDetailsDto?> GetUserDetailsAsync(int id, ClaimsPrincipal user)
         {
-            throw new NotImplementedException();
+            var targetUser = await _userRepository.GetByIdAsync(id, user);
+            if (targetUser == null)
+            {
+                return null;
+            }
+
+            var evaluatorAssignments = await _evaluatorAssignmentRepository.GetEvaluatorAssignmentsAsync(id);
+            var employeeAssignments = await _evaluatorAssignmentRepository.GetEmployeeAssignmentsAsync(id);
+
+            return new UserWithDetailsDto
+            {
+                Id = targetUser.ID,
+                FirstName = targetUser.FirstName,
+                LastName = targetUser.LastName,
+                Email = targetUser.Email,
+                DepartmentId = targetUser.DepartmentID,
+                DepartmentName = targetUser.Department?.Name ?? "",
+                IsActive = targetUser.IsActive,
+                CreatedDate = targetUser.CreatedDate,
+                UpdatedDate = targetUser.UpdatedDate,
+                Roles = targetUser.RoleAssignments.Select(ra => new RoleAssignmentSummaryDto
+                {
+                    RoleId = ra.RoleID,
+                    RoleName = ra.Role.Name,
+                    AssignedDate = ra.AssignedDate
+                }).ToList(),
+                EvaluatorTeams = evaluatorAssignments.Where(ea => ea.IsActive)
+                    .GroupBy(ea => ea.Team)
+                    .Select(g => new TeamSummaryDto
+                    {
+                        Id = g.Key.ID,
+                        Name = g.Key.Name,
+                        Description = g.Key.Description
+                    }).ToList(),
+                EmployeeTeams = employeeAssignments.Where(ea => ea.IsActive)
+                    .GroupBy(ea => ea.Team)
+                    .Select(g => new TeamSummaryDto
+                    {
+                        Id = g.Key.ID,
+                        Name = g.Key.Name,
+                        Description = g.Key.Description
+                    }).ToList()
+            };
         }
 
-        public Task<UserDto> UpdateUserAsync(ClaimsPrincipal user, int id)
+        public async Task<bool> ChangePasswordAsync(int userId, ChangePasswordRequest request, ClaimsPrincipal user)
         {
-            throw new NotImplementedException();
+            var requestingUserId = GetUserId(user);
+            
+            // Users can change their own password, admins can change any password
+            if (!user.IsInRole("Admin") && requestingUserId != userId)
+            {
+                throw new UnauthorizedAccessException("You can only change your own password");
+            }
+
+            var targetUser = await _userRepository.GetByIdAsync(userId);
+            if (targetUser == null)
+            {
+                return false;
+            }
+
+            // If not admin, verify current password
+            if (!user.IsInRole("Admin"))
+            {
+                if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, targetUser.PasswordHash))
+                {
+                    throw new ArgumentException("Current password is incorrect");
+                }
+            }
+
+            targetUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword);
+            targetUser.UpdatedDate = DateTime.UtcNow;
+
+            await _userRepository.UpdateAsync(targetUser);
+
+            _logger.LogInformation("Password changed for user: ID {UserId} by User {RequestingUserId}", 
+                userId, requestingUserId);
+
+            return true;
         }
 
-        public Task<TeamDto> UpdateUserTeamAsync(UpdateUserTeamRequest request, ClaimsPrincipal user)
+        private UserDto MapToUserDto(User user)
         {
-            throw new NotImplementedException();
+            return new UserDto
+            {
+                ID = user.ID,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                PasswordHash = user.PasswordHash,
+                DepartmentId = user.DepartmentID,
+                IsActive = user.IsActive,
+                CreatedDate = user.CreatedDate,
+                UpdatedDate = user.UpdatedDate
+            };
         }
+
+        private UserListDto MapToUserListDto(User user)
+        {
+            return new UserListDto
+            {
+                ID = user.ID,
+                FirstName = user.FirstName,
+                LastName = user.LastName,
+                Email = user.Email,
+                TeamId = user.EvaluatorAssignments.Where(ea => ea.EvaluatorID == user.ID && ea.IsActive)
+                    .Select(ea => ea.TeamID).Distinct().ToList(),
+                RoleId = user.RoleAssignments.Where(ra => ra.RoleID > 3) // Job roles only
+                    .Select(ra => ra.RoleID).ToList(),
+                DepartmentId = user.DepartmentID,
+                IsActive = user.IsActive,
+                CreatedDate = user.CreatedDate,
+                UpdatedDate = user.UpdatedDate
+            };
+        }
+
         private int GetUserId(ClaimsPrincipal user)
         {
             var userIdClaim = user.FindFirst(ClaimTypes.NameIdentifier)?.Value;
