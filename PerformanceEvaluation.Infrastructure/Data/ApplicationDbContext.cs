@@ -176,9 +176,9 @@ namespace PerformanceEvaluation.Infrastructure.Data
                     .WithMany(u => u.EvaluatorAssignments)
                     .HasForeignKey(e => e.EvaluatorID)
                     .OnDelete(DeleteBehavior.Restrict);
-                
+
                 entity.HasOne(e => e.Employee)
-                    .WithMany(u => u.EvaluatorAssignments)
+                    .WithMany(u => u.EmployeeAssignments)
                     .HasForeignKey(e => e.EmployeeID)
                     .OnDelete(DeleteBehavior.Restrict);
 
@@ -204,6 +204,13 @@ namespace PerformanceEvaluation.Infrastructure.Data
             });
 
             SeedData(modelBuilder);
+
+            modelBuilder.Entity<Team>(entity =>
+            {
+                entity.HasKey(e => e.ID);
+                entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+                entity.HasIndex(e => e.Description).IsUnique();
+            });
         }
 
         private void SeedData(ModelBuilder modelBuilder)

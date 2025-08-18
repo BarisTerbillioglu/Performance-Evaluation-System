@@ -30,7 +30,7 @@ namespace PerformanceEvaluation.Core.Entities
         public virtual Department Department { get; set; } = null!;
         public virtual ICollection<RoleAssignment> RoleAssignments { get; set; } = new List<RoleAssignment>();
         public virtual ICollection<EvaluatorAssignment> EvaluatorAssignments { get; set; } = new List<EvaluatorAssignment>();
-        public virtual ICollection<EvaluatorAssignment> TeamAssignments { get; set; } = new List<EvaluatorAssignment>();
+        public virtual ICollection<EvaluatorAssignment> EmployeeAssignments { get; set; } = new List<EvaluatorAssignment>();
         public virtual ICollection<Evaluation> EvaluatorEvaluations { get; set; } = new List<Evaluation>();
         public virtual ICollection<Evaluation> EmployeeEvaluations { get; set; } = new List<Evaluation>();
         

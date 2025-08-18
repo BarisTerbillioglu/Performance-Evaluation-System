@@ -9,8 +9,54 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
 {
     public class UserRepository : BaseRepository<User>, IUserRepository
     {
-        public UserRepository(ApplicationDbContext context, ILogger<UserRepository> logger) 
-            : base(context, logger) { }
+        public UserRepository(ApplicationDbContext context, ILogger<UserRepository> logger)
+    : base(context, logger) { }
+
+        public async Task<User> CreateUserAsync(string firstName, string lastName, string email, string passwordHash, int departmentId, ClaimsPrincipal user)
+        {
+            try
+            {
+                var RequestingUserId = GetUserId(user);
+                
+                if (!IsAdmin(user))
+                {
+                    _logger.LogWarning("User {requestingUserId} attempted to create new User without permission", 
+                        RequestingUserId);
+                    throw new UnauthorizedAccessException("Cannot evaluate this employee");
+                }
+
+                var newUser = new User
+                {
+                    FirstName = firstName,
+                    LastName = lastName,
+                    Email = email,
+                    PasswordHash = passwordHash,
+                    DepartmentID = departmentId,
+                    IsActive = true,
+                    CreatedDate = DateTime.UtcNow
+                };
+
+                await _dbSet.AddAsync(newUser);
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("New user is created: ID {NewUserId} by User {UserId}",
+                    newUser.ID, RequestingUserId);
+
+                return newUser;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                // Re-throw authorization errors
+                throw;
+            }
+            catch (Exception ex)
+            {
+                var requestingUserId = GetUserId(user);
+                _logger.LogError(ex, "Error creating new user. User attempting to create a new user: {requestingUserId}", 
+                    requestingUserId);
+                throw;
+            }
+        }
 
         /// <summary>
         /// Checks if the requesting user can access data of the target user
@@ -25,14 +71,14 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                 var requestingUserId = GetUserId(user);
                 if (IsAdmin(user))
                 {
-                    _logger.LogInformation("Admin user {RequestingUserId} is granted access to user data {TargetUserId}", 
+                    _logger.LogInformation("Admin user {RequestingUserId} is granted access to user data {TargetUserId}",
                         requestingUserId, id);
                     return true;
                 }
                 if (IsEvaluator(user))
                 {
                     var evaluatorId = GetUserId(user);
-                    var canAccess =  await IsMyTeamMemberAsync(evaluatorId, id);
+                    var canAccess = await IsMyTeamMemberAsync(evaluatorId, id);
                     if (canAccess)
                     {
                         _logger.LogInformation("Evaluator {EvaluatorId} granted access to team member {EmployeeId}",
@@ -40,7 +86,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                     }
                     else
                     {
-                        _logger.LogWarning("Evaluator {EvaluatorId} denied access to non-team member {EmployeeId}", 
+                        _logger.LogWarning("Evaluator {EvaluatorId} denied access to non-team member {EmployeeId}",
                             evaluatorId, id);
                     }
                     return canAccess;
@@ -49,27 +95,27 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                 {
                     var employeeId = GetUserId(user);
                     var canAccess = employeeId == id; // Employee can only access their own data
-                    
+
                     if (canAccess)
                     {
                         _logger.LogInformation("Employee {EmployeeId} is granted access to own data", employeeId);
                     }
                     else
                     {
-                        _logger.LogWarning("Employee {EmployeeId} is denied access to other user's data {TargetUserId}", 
+                        _logger.LogWarning("Employee {EmployeeId} is denied access to other user's data {TargetUserId}",
                             employeeId, id);
                     }
-                    
+
                     return canAccess;
                 }
-                _logger.LogWarning("User {RequestingUserId} with unrecognized role is denied access to user data {TargetUserId}", 
+                _logger.LogWarning("User {RequestingUserId} with unrecognized role is denied access to user data {TargetUserId}",
                     requestingUserId, id);
                 return false;
             }
             catch (Exception ex)
             {
                 var requestingUserId = GetUserId(user);
-                _logger.LogError(ex, "Error checking data access authorization. Requesting user: {RequestingUserId}, Target user: {TargetUserId}", 
+                _logger.LogError(ex, "Error checking data access authorization. Requesting user: {RequestingUserId}, Target user: {TargetUserId}",
                     requestingUserId, id);
                 return false;
             }

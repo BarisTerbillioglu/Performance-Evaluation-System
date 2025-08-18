@@ -1,13 +1,12 @@
 namespace PerformanceEvaluation.Application.DTOs.User
 {
-    public class UserDto
+    public class EvaluatorListDto
     {
         public int ID { get; set; }
         public required string FirstName { get; set; }
         public required string LastName { get; set; }
-
         public required string Email { get; set; }
-        public required string PasswordHash { get; set; }
+        public List<int> TeamId { get; set; } = new List<int>();
         public int DepartmentId { get; set; }
         public bool IsActive { get; set; }
         public DateTime CreatedDate { get; set; }

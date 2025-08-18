@@ -9,6 +9,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Interfaces
         Task<User?> GetByEmailAsync(string email);
         Task<User?> GetWithRolesAsync(int userId);
         Task<User?> GetWithRolesAndDepartmentAsync(int userId);
+        Task<User> CreateUserAsync(string firstName, string lastName, string Email, string passwordHash, int departmentId, ClaimsPrincipal user);
 
         // Admin-only methods
         Task<IEnumerable<User>> GetAllUsersAsync(); // Admin only

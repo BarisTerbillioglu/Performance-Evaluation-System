@@ -15,6 +15,7 @@ namespace PerformanceEvaluation.Core.Entities
         public string Description { get; set; } = string.Empty;
 
         public DateTime CreatedDate { get; set; } = DateTime.UtcNow;
+        public bool IsActive { get; set; }
 
         //Navigation Properties
         public virtual ICollection<EvaluatorAssignment> EvaluatorAssignments { get; set; } = new List<EvaluatorAssignment>();
