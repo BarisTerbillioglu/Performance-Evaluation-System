@@ -10,6 +10,9 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Interfaces
         Task<User?> GetWithRolesAsync(int userId);
         Task<User?> GetWithRolesAndDepartmentAsync(int userId);
         Task<User> CreateUserAsync(string firstName, string lastName, string Email, string passwordHash, int departmentId, ClaimsPrincipal user);
+        Task<bool> DeactivateUserAsync(int userId, ClaimsPrincipal requestingUser);
+        Task<bool> ReactivateUserAsync(int userId, ClaimsPrincipal requestingUser);
+        Task<bool> CascadeDeactivateUserAsync(int userId, ClaimsPrincipal requestingUser);
 
         // Admin-only methods
         Task<IEnumerable<User>> GetAllUsersAsync(); // Admin only

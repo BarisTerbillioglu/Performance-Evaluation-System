@@ -17,10 +17,10 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             try
             {
                 var RequestingUserId = GetUserId(user);
-                
+
                 if (!IsAdmin(user))
                 {
-                    _logger.LogWarning("User {requestingUserId} attempted to create new User without permission", 
+                    _logger.LogWarning("User {requestingUserId} attempted to create new User without permission",
                         RequestingUserId);
                     throw new UnauthorizedAccessException("Cannot evaluate this employee");
                 }
@@ -52,7 +52,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             catch (Exception ex)
             {
                 var requestingUserId = GetUserId(user);
-                _logger.LogError(ex, "Error creating new user. User attempting to create a new user: {requestingUserId}", 
+                _logger.LogError(ex, "Error creating new user. User attempting to create a new user: {requestingUserId}",
                     requestingUserId);
                 throw;
             }
@@ -182,7 +182,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,"Error getting getting user data by email");
+                _logger.LogError(ex, "Error getting getting user data by email");
                 return null;
             }
         }
@@ -229,10 +229,10 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,"Error getting profile data for user: {userId}", userId);
+                _logger.LogError(ex, "Error getting profile data for user: {userId}", userId);
                 return null;
             }
-        } 
+        }
 
         public async Task<IEnumerable<User>> GetMyTeamMembersAsync(int evaluatorId)
         {
@@ -252,7 +252,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,"Error getting team members for the user: {evaluatorId}", evaluatorId);
+                _logger.LogError(ex, "Error getting team members for the user: {evaluatorId}", evaluatorId);
                 return new List<User>();
             }
         }
@@ -281,7 +281,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,"Error getting getting user data by Department");
+                _logger.LogError(ex, "Error getting getting user data by Department");
                 return new List<User>();
             }
         }
@@ -307,7 +307,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,"Error getting getting user data by Role");
+                _logger.LogError(ex, "Error getting getting user data by Role");
                 return new List<User>();
             }
         }
@@ -324,7 +324,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,"Error getting getting user data with roles and departments");
+                _logger.LogError(ex, "Error getting getting user data with roles and departments");
                 return null;
             }
         }
@@ -340,7 +340,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,"Error getting getting user data with roles");
+                _logger.LogError(ex, "Error getting getting user data with roles");
                 return null;
             }
         }
@@ -363,6 +363,171 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                 _logger.LogError(ex, "Error checking if employee {employeeId} is in the same team with evaluator {evaluatorId}"
                     , employeeId, evaluatorId);
                 return false;
+            }
+        }
+        // UserRepository - Add these methods
+
+        public async Task<bool> DeactivateUserAsync(int userId, ClaimsPrincipal requestingUser)
+        {
+            try
+            {
+                var RequestingUserId = GetUserId(requestingUser);
+                
+                if (!IsAdmin(requestingUser))
+                {
+                    _logger.LogWarning("User {requestingUserId} attempted to deactivate user {userId} without permission", 
+                        RequestingUserId, userId);
+                    throw new UnauthorizedAccessException("Only administrators can deactivate users");
+                }
+
+                var targetUser = await _dbSet.FirstOrDefaultAsync(u => u.ID == userId && u.IsActive);
+                if (targetUser == null)
+                {
+                    return false;
+                }
+
+                targetUser.IsActive = false;
+                targetUser.UpdatedDate = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("User deactivated: ID {userId} by Admin {adminId}", userId, RequestingUserId);
+                return true;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deactivating user {userId}", userId);
+                throw;
+            }
+        }
+
+        public async Task<bool> ReactivateUserAsync(int userId, ClaimsPrincipal requestingUser)
+        {
+            try
+            {
+                var RequestingUserId = GetUserId(requestingUser);
+                
+                if (!IsAdmin(requestingUser))
+                {
+                    throw new UnauthorizedAccessException("Only administrators can reactivate users");
+                }
+
+                var targetUser = await _dbSet.FirstOrDefaultAsync(u => u.ID == userId && !u.IsActive);
+                if (targetUser == null)
+                {
+                    return false;
+                }
+
+                targetUser.IsActive = true;
+                targetUser.UpdatedDate = DateTime.UtcNow;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("User reactivated: ID {userId} by Admin {adminId}", userId, RequestingUserId);
+                return true;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating user {userId}", userId);
+                throw;
+            }
+        }
+
+        public async Task<bool> CascadeDeactivateUserAsync(int userId, ClaimsPrincipal requestingUser)
+        {
+            try
+            {
+                var RequestingUserId = GetUserId(requestingUser);
+                
+                if (!IsAdmin(requestingUser))
+                {
+                    throw new UnauthorizedAccessException("Only administrators can cascade deactivate users");
+                }
+
+                var targetUser = await _dbSet
+                    .Include(u => u.RoleAssignments.Where(ra => ra.IsActive))
+                    .Include(u => u.EvaluatorAssignments.Where(ea => ea.IsActive))
+                    .Include(u => u.EmployeeAssignments.Where(ea => ea.IsActive))
+                    .Include(u => u.EvaluatorEvaluations.Where(e => e.IsActive))
+                        .ThenInclude(e => e.EvaluationScores.Where(es => es.IsActive))
+                            .ThenInclude(es => es.Comments.Where(c => c.IsActive))
+                    .FirstOrDefaultAsync(u => u.ID == userId && u.IsActive);
+
+                if (targetUser == null)
+                {
+                    return false;
+                }
+
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                
+                try
+                {
+                    var deactivationTime = DateTime.UtcNow;
+
+                    // Deactivate all related entities
+                    foreach (var roleAssignment in targetUser.RoleAssignments.Where(ra => ra.IsActive))
+                    {
+                        roleAssignment.IsActive = false;
+                    }
+
+                    foreach (var assignment in targetUser.EvaluatorAssignments.Where(ea => ea.IsActive))
+                    {
+                        assignment.IsActive = false;
+                    }
+
+                    foreach (var assignment in targetUser.EmployeeAssignments.Where(ea => ea.IsActive))
+                    {
+                        assignment.IsActive = false;
+                    }
+
+                    foreach (var evaluation in targetUser.EvaluatorEvaluations.Where(e => e.IsActive))
+                    {
+                        evaluation.IsActive = false;
+                        
+                        foreach (var score in evaluation.EvaluationScores.Where(es => es.IsActive))
+                        {
+                            score.IsActive = false;
+                            
+                            foreach (var comment in score.Comments.Where(c => c.IsActive))
+                            {
+                                comment.IsActive = false;
+                                comment.UpdatedDate = deactivationTime;
+                            }
+                        }
+                    }
+
+                    // Deactivate the user
+                    targetUser.IsActive = false;
+                    targetUser.UpdatedDate = deactivationTime;
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    _logger.LogInformation("User and related data cascade deactivated: ID {userId} by Admin {adminId}", 
+                        userId, RequestingUserId);
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error during cascade deactivation for user {userId}", userId);
+                    throw;
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cascade deactivating user {userId}", userId);
+                throw;
             }
         }
     }

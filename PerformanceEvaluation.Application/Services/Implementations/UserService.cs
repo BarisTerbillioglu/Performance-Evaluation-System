@@ -118,33 +118,99 @@ namespace PerformanceEvaluation.Application.Services.Implementations
         {
             if (!user.IsInRole("Admin"))
             {
-                throw new UnauthorizedAccessException("Only administrators can delete users");
+                throw new UnauthorizedAccessException("Only administrators can permanently delete users");
             }
 
-            var targetUser = await _userRepository.GetByIdAsync(id);
-            if (targetUser == null)
+            try
             {
-                return false;
-            }
+                // Check for evaluations that would block permanent deletion
+                var evaluations = await _evaluationRepository.GetAllAsync(user);
+                var userEvaluations = evaluations.Where(e => e.EmployeeID == id).ToList();
+                
+                if (userEvaluations.Any())
+                {
+                    throw new InvalidOperationException(
+                        $"Cannot permanently delete user. User has {userEvaluations.Count} evaluation(s) as employee. " +
+                        "Consider using cascade deactivation instead.");
+                }
 
-            // Check if user has evaluations
-            var evaluations = await _evaluationRepository.GetAllAsync(user);
-            var userEvaluations = evaluations.Where(e => e.EvaluatorID == id || e.EmployeeID == id);
-            
-            if (userEvaluations.Any())
+                var result = await _userRepository.DeleteAsync(id);
+
+                if (result)
+                {
+                    _logger.LogWarning("User permanently deleted: ID {UserId} by Admin {AdminId}", 
+                        id, GetUserId(user));
+                }
+
+                return result;
+            }
+            catch (UnauthorizedAccessException)
             {
-                throw new InvalidOperationException("Cannot delete user with existing evaluations");
+                throw;
             }
-
-            var result = await _userRepository.DeleteAsync(id);
-
-            if (result)
+            catch (InvalidOperationException)
             {
-                _logger.LogInformation("User deleted: ID {UserId} by Admin {AdminId}", 
-                    id, GetUserId(user));
+                throw;
             }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error permanently deleting user {UserId}", id);
+                throw new InvalidOperationException("Error occurred while permanently deleting user");
+            }
+        }
 
-            return result;
+        public async Task<bool> DeactivateUserAsync(int id, ClaimsPrincipal user)
+        {
+            try
+            {
+                return await _userRepository.DeactivateUserAsync(id, user);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Unauthorized attempt to deactivate user {UserId}: {Message}", id, ex.Message);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deactivating user {UserId}", id);
+                throw new InvalidOperationException("An error occurred while deactivating the user");
+            }
+        }
+
+        public async Task<bool> ReactivateUserAsync(int id, ClaimsPrincipal user)
+        {
+            try
+            {
+                return await _userRepository.ReactivateUserAsync(id, user);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Unauthorized attempt to reactivate user {UserId}: {Message}", id, ex.Message);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating user {UserId}", id);
+                throw new InvalidOperationException("An error occurred while reactivating the user");
+            }
+        }
+
+        public async Task<bool> CascadeDeactivateUserAsync(int id, ClaimsPrincipal user)
+        {
+            try
+            {
+                return await _userRepository.CascadeDeactivateUserAsync(id, user);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Unauthorized attempt to cascade deactivate user {UserId}: {Message}", id, ex.Message);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cascade deactivating user {UserId}", id);
+                throw new InvalidOperationException("An error occurred while cascade deactivating the user");
+            }
         }
 
         public async Task<IEnumerable<UserListDto>> GetUserListAsync(ClaimsPrincipal user)

@@ -32,8 +32,8 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
         public async Task<Role?> GetRoleByNameAsync(string roleName)
         {
             return await _dbSet
-                .Include(r => r.Name)
-                .Include(r => r.Description)
+                .Include(r => r.RoleCriteriaDescriptions)
+                    .ThenInclude(rcd => rcd.Criteria)
                 .FirstOrDefaultAsync(r => r.Name == roleName && r.IsActive);
         }
 

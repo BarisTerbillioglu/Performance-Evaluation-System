@@ -11,6 +11,9 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Interfaces
         Task<IEnumerable<Evaluation>> GetAllEvaluationsAsync(); // Admin only
         Task<IEnumerable<Evaluation>> GetEvaluationsByDepartmentAsync(int departmentId);
         Task<IEnumerable<Evaluation>> GetEvaluationsByPeriodAsync(string period, ClaimsPrincipal user);
+        Task<bool> DeactivateEvaluationAsync(int evaluationId, ClaimsPrincipal requestingUser);
+        Task<bool> ReactivateEvaluationAsync(int evaluationId, ClaimsPrincipal requestingUser);
+        Task<bool> CascadeDeactivateEvaluationAsync(int evaluationId, ClaimsPrincipal requestingUser);
 
         // Evaluator methods
         Task<IEnumerable<Evaluation>> GetMyEvaluationsAsync(int evaluatorId);

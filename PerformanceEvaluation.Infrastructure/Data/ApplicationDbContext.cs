@@ -75,7 +75,7 @@ namespace PerformanceEvaluation.Infrastructure.Data
                 entity.HasOne(e => e.User)
                     .WithMany(u => u.RoleAssignments)
                     .HasForeignKey(e => e.UserID)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(e => e.Role)
                     .WithMany(u => u.RoleAssignments)
@@ -139,7 +139,7 @@ namespace PerformanceEvaluation.Infrastructure.Data
                 entity.HasOne(e => e.Evaluator)
                     .WithMany(u => u.EvaluatorEvaluations)
                     .HasForeignKey(e => e.EvaluatorID)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(e => e.Employee)
                 .WithMany(u => u.EmployeeEvaluations)
@@ -162,7 +162,7 @@ namespace PerformanceEvaluation.Infrastructure.Data
                 entity.HasOne(e => e.Evaluation)
                 .WithMany(u => u.EvaluationScores)
                 .HasForeignKey(e => e.EvaluationID)
-                .OnDelete(DeleteBehavior.Restrict);
+                .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasIndex(e => new { e.CriteriaID, e.EvaluationID }).IsUnique();
             });
@@ -175,7 +175,7 @@ namespace PerformanceEvaluation.Infrastructure.Data
                 entity.HasOne(e => e.Evaluator)
                     .WithMany(u => u.EvaluatorAssignments)
                     .HasForeignKey(e => e.EvaluatorID)
-                    .OnDelete(DeleteBehavior.Restrict);
+                    .OnDelete(DeleteBehavior.Cascade);
 
                 entity.HasOne(e => e.Employee)
                     .WithMany(u => u.EmployeeAssignments)

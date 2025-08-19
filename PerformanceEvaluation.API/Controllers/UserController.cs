@@ -136,11 +136,95 @@ namespace PerformanceEvaluation.API.Controllers
         }
 
         /// <summary>
-        /// Delete user (Admin only)
+        /// Deactivate user (soft delete)
         /// </summary>
-        [HttpDelete("{id}")]
+        [HttpPatch("{id}/deactivate")]
         [Authorize(Policy = "AdminOnly")]
-        public async Task<IActionResult> DeleteUser(int id)
+        public async Task<IActionResult> DeactivateUser(int id)
+        {
+            try
+            {
+                var result = await _userService.DeactivateUserAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "User not found or already inactive" });
+                }
+
+                return Ok(new { message = "User deactivated successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deactivating user {UserId}", id);
+                return StatusCode(500, new { message = "Error deactivating user" });
+            }
+        }
+
+        /// <summary>
+        /// Reactivate user
+        /// </summary>
+        [HttpPatch("{id}/reactivate")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> ReactivateUser(int id)
+        {
+            try
+            {
+                var result = await _userService.ReactivateUserAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "User not found or already active" });
+                }
+
+                return Ok(new { message = "User reactivated successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating user {UserId}", id);
+                return StatusCode(500, new { message = "Error reactivating user" });
+            }
+        }
+
+        /// <summary>
+        /// Cascade deactivate user and all related data
+        /// </summary>
+        [HttpPatch("{id}/cascade-deactivate")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> CascadeDeactivateUser(int id)
+        {
+            try
+            {
+                var result = await _userService.CascadeDeactivateUserAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "User not found or already inactive" });
+                }
+
+                return Ok(new { message = "User and related data deactivated successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cascade deactivating user {UserId}", id);
+                return StatusCode(500, new { message = "Error cascade deactivating user" });
+            }
+        }
+
+        /// <summary>
+        /// Permanently delete user (Admin only - use with caution)
+        /// </summary>
+        [HttpDelete("{id}/permanent")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> PermanentlyDeleteUser(int id)
         {
             try
             {
@@ -150,20 +234,20 @@ namespace PerformanceEvaluation.API.Controllers
                     return NotFound(new { message = "User not found" });
                 }
 
-                return NoContent();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
+                return Ok(new { message = "User permanently deleted" });
             }
             catch (UnauthorizedAccessException ex)
             {
                 return Forbid(ex.Message);
             }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting user {UserId}", id);
-                return StatusCode(500, new { message = "Error deleting user" });
+                _logger.LogError(ex, "Error permanently deleting user {UserId}", id);
+                return StatusCode(500, new { message = "Error permanently deleting user" });
             }
         }
 

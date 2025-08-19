@@ -12,5 +12,8 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Interfaces
         Task<EvaluatorAssignment?> GetEvaluatorEmployeeAssignmentAsync(int evaluatorId, int employeeId);
         Task<bool> DeactivateTeamAssignmentAsync(int teamId, int userId);
         Task<bool> DeactivateEvaluatorEmployeeAssignmentAsync(int evaluatorId, int employeeId);
+        Task<bool> DeactivateAssignmentAsync(int assignmentId);
+        Task<bool> ReactivateAssignmentAsync(int assignmentId);
+        Task<bool> DeactivateUserAssignmentsAsync(int userId);
     }
 }

@@ -13,6 +13,9 @@ namespace PerformanceEvaluation.Application.Services.Interfaces
         Task<UserDto> CreateUserAsync(CreateUserRequest request, ClaimsPrincipal user);
         Task<UserDto?> UpdateUserAsync(int id, UpdateUserRequest request, ClaimsPrincipal user);
         Task<bool> DeleteUserAsync(int id, ClaimsPrincipal user);
+        Task<bool> DeactivateUserAsync(int id, ClaimsPrincipal user);
+        Task<bool> ReactivateUserAsync(int id, ClaimsPrincipal user);
+        Task<bool> CascadeDeactivateUserAsync(int id, ClaimsPrincipal user);
         Task<UserWithDetailsDto?> GetUserDetailsAsync(int id, ClaimsPrincipal user);
         Task<bool> ChangePasswordAsync(int userId, ChangePasswordRequest request, ClaimsPrincipal user);
     }

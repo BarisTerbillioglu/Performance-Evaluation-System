@@ -26,5 +26,8 @@ namespace PerformanceEvaluation.Application.Services.Interfaces
         Task<bool> SubmitEvaluationAsync(int evaluationId, ClaimsPrincipal user);
         Task<IEnumerable<Evaluation>> GetEvaluationsAsync(ClaimsPrincipal user);
         Task<Evaluation?> GetEvaluationDetailsAsync(int evaluationId, ClaimsPrincipal user);
+        Task<bool> DeactivateEvaluationAsync(int evaluationId, ClaimsPrincipal user);
+        Task<bool> ReactivateEvaluationAsync(int evaluationId, ClaimsPrincipal user);
+        Task<bool> CascadeDeactivateEvaluationAsync(int evaluationId, ClaimsPrincipal user);
     }
 }

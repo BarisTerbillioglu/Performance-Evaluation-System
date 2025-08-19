@@ -205,6 +205,8 @@ namespace PerformanceEvaluation.Application.Services.Implementations
             };
 
             var createdAssignment = await _roleRepository.AddRoleAssignmentAsync(roleAssignment);
+            targetUser.RoleAssignments.Add(createdAssignment);
+            targetUser = await _userRepository.UpdateAsync(targetUser);
 
             _logger.LogInformation("Role assigned: UserId {UserId}, RoleId {RoleId} by Admin {AdminId}", 
                 request.UserId, request.RoleId, GetUserId(user));

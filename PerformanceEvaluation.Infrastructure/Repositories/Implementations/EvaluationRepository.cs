@@ -114,29 +114,29 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
         public async Task<IEnumerable<Evaluation>> GetAllEvaluationsAsync()
         {
             return await _dbSet
-                .Include(e => e.Evaluator)
-                .Include(e => e.Employee)
-                .Include(e => e.EvaluationScores)
-                    .ThenInclude(es => es.Criteria)
-                        .ThenInclude(c => c.CriteriaCategory)
-                .Include(e => e.Period)
-                .Include(e => e.Status)
-                .Include(e => e.TotalScore)
-                .OrderByDescending(e => e.CreatedDate)
-                .ToListAsync();
+            .Include(e => e.Evaluator)
+            .Include(e => e.Employee)
+                .ThenInclude(emp => emp.Department)
+            .Include(e => e.EvaluationScores)
+                .ThenInclude(es => es.Criteria)
+                    .ThenInclude(c => c.CriteriaCategory)
+            .Include(e => e.EvaluationScores)
+                .ThenInclude(es => es.Comments)
+            .OrderByDescending(e => e.CreatedDate)
+            .ToListAsync();
         }
 
         public async Task<Evaluation?> GetByIdAsync(int id, ClaimsPrincipal user)
         {
             var query = _dbSet
-                .Include(e => e.Period)
                 .Include(e => e.Evaluator)
                 .Include(e => e.Employee)
+                    .ThenInclude(emp => emp.Department)
                 .Include(e => e.EvaluationScores)
                     .ThenInclude(es => es.Criteria)
                         .ThenInclude(c => c.CriteriaCategory)
-                .Include(e => e.TotalScore)
-                .Include(e => e.Status)
+                .Include(e => e.EvaluationScores)
+                    .ThenInclude(es => es.Comments)
                 .Where(e => e.ID == id);
 
             if (IsAdmin(user))
@@ -160,12 +160,12 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             return await _dbSet
                 .Include(e => e.Evaluator)
                 .Include(e => e.Employee)
+                    .ThenInclude(emp => emp.Department)
                 .Include(e => e.EvaluationScores)
                     .ThenInclude(es => es.Criteria)
                         .ThenInclude(c => c.CriteriaCategory)
-                .Include(e => e.Period)
-                .Include(e => e.Status)
-                .Include(e => e.TotalScore)
+                .Include(e => e.EvaluationScores)
+                    .ThenInclude(es => es.Comments)
                 .Where(e => e.Employee.DepartmentID == departmentId)
                 .OrderByDescending(e => e.CreatedDate)
                 .ToListAsync();
@@ -178,6 +178,10 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                 .Include(e => e.Employee)
                     .ThenInclude(emp => emp.Department)
                 .Include(e => e.EvaluationScores)
+                    .ThenInclude(es => es.Criteria)
+                            .ThenInclude(c => c.CriteriaCategory)
+                    .Include(e => e.EvaluationScores)
+                        .ThenInclude(es => es.Comments)
                 .Where(e => e.Period == period);
 
             if (IsEvaluator(user))
@@ -202,6 +206,10 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                 .Include(e => e.Employee)
                     .ThenInclude(emp => emp.Department)
                 .Include(e => e.EvaluationScores)
+                    .ThenInclude(es => es.Criteria)
+                            .ThenInclude(c => c.CriteriaCategory)
+                    .Include(e => e.EvaluationScores)
+                        .ThenInclude(es => es.Comments)
                 .Where(e => e.Status == statusString);
 
             if (IsEvaluator(user))
@@ -227,8 +235,8 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                 .Include(e => e.EvaluationScores)
                     .ThenInclude(es => es.Comments)
                 .Include(e => e.Evaluator)
-                .Include(e => e.EvaluationScores)
-                    .ThenInclude(es => es.Score)
+                .Include(e => e.Employee)
+                    .ThenInclude(em => em.Department)
                 .FirstOrDefaultAsync(e => e.ID == evaluationId && e.EmployeeID == employeeId);
         }
 
@@ -255,7 +263,6 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                         .ThenInclude(c => c.CriteriaCategory)
                 .Include(e => e.EvaluationScores)
                     .ThenInclude(es => es.Comments)
-                .Include(e => e.TotalScore)
                 .Where(e => e.EmployeeID == employeeId)
                 .OrderByDescending(e => e.CreatedDate)
                 .ToListAsync();
@@ -274,7 +281,8 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                 .Include(e => e.EvaluationScores)
                     .ThenInclude(es => es.Criteria)
                         .ThenInclude(c => c.CriteriaCategory)
-                .Include(e => e.TotalScore)
+                .Include(e => e.Employee)
+                    .ThenInclude(em => em.Department)
                 .Where(e => TeamMemberIds.Contains(e.EmployeeID) || e.EvaluatorID == evaluatorId)
                 .OrderByDescending(e => e.CreatedDate)
                 .ToListAsync();
@@ -431,7 +439,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             return await _dbSet
                 .Include(e => e.Employee)
                 .Include(e => e.Evaluator)
-                .Include(e => e.EvaluationScores) // Just count, no details
+                .Include(e => e.EvaluationScores) 
                 .FirstOrDefaultAsync(e => e.ID == evaluationId);
         }
 
@@ -583,6 +591,8 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                 .Include(e => e.EvaluationScores)
                     .ThenInclude(es => es.Criteria)
                         .ThenInclude(c => c.CriteriaCategory)
+                .Include(e => e.EvaluationScores)
+                    .ThenInclude(es => es.Comments)
                 .FirstOrDefaultAsync(e => e.ID == evaluationId);
         }
         public async Task<IDbContextTransaction> BeginTransactionAsync()
@@ -598,6 +608,137 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Error starting database transaction");
+                throw;
+            }
+        }
+
+        public async Task<bool> DeactivateEvaluationAsync(int evaluationId, ClaimsPrincipal requestingUser)
+        {
+            try
+            {
+                var evaluation = await _dbSet.FirstOrDefaultAsync(e => e.ID == evaluationId && e.IsActive);
+                if (evaluation == null)
+                {
+                    return false;
+                }
+
+                if (!await CanAccessAsync(evaluationId, requestingUser))
+                {
+                    throw new UnauthorizedAccessException("Cannot access this evaluation");
+                }
+
+                evaluation.IsActive = false;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Evaluation deactivated: ID {evaluationId} by User {userId}", 
+                    evaluationId, GetUserId(requestingUser));
+                return true;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deactivating evaluation {evaluationId}", evaluationId);
+                throw;
+            }
+        }
+
+        public async Task<bool> ReactivateEvaluationAsync(int evaluationId, ClaimsPrincipal requestingUser)
+        {
+            try
+            {
+                var evaluation = await _dbSet.FirstOrDefaultAsync(e => e.ID == evaluationId && !e.IsActive);
+                if (evaluation == null)
+                {
+                    return false;
+                }
+
+                if (!IsAdmin(requestingUser))
+                {
+                    throw new UnauthorizedAccessException("Only administrators can reactivate evaluations");
+                }
+
+                evaluation.IsActive = true;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Evaluation reactivated: ID {evaluationId} by Admin {userId}", 
+                    evaluationId, GetUserId(requestingUser));
+                return true;
+            }
+            catch (UnauthorizedAccessException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating evaluation {evaluationId}", evaluationId);
+                throw;
+            }
+        }
+
+        public async Task<bool> CascadeDeactivateEvaluationAsync(int evaluationId, ClaimsPrincipal requestingUser)
+        {
+            try
+            {
+                var evaluation = await _dbSet
+                    .Include(e => e.EvaluationScores.Where(es => es.IsActive))
+                        .ThenInclude(es => es.Comments.Where(c => c.IsActive))
+                    .FirstOrDefaultAsync(e => e.ID == evaluationId && e.IsActive);
+
+                if (evaluation == null)
+                {
+                    return false;
+                }
+
+                if (!await CanAccessAsync(evaluationId, requestingUser))
+                {
+                    throw new UnauthorizedAccessException("Cannot access this evaluation");
+                }
+
+                using var transaction = await _context.Database.BeginTransactionAsync();
+                
+                try
+                {
+                    var deactivationTime = DateTime.UtcNow;
+
+                    // Deactivate all scores and comments
+                    foreach (var score in evaluation.EvaluationScores.Where(es => es.IsActive))
+                    {
+                        score.IsActive = false;
+                        
+                        foreach (var comment in score.Comments.Where(c => c.IsActive))
+                        {
+                            comment.IsActive = false;
+                            comment.UpdatedDate = deactivationTime;
+                        }
+                    }
+
+                    // Deactivate the evaluation
+                    evaluation.IsActive = false;
+
+                    await _context.SaveChangesAsync();
+                    await transaction.CommitAsync();
+
+                    _logger.LogInformation("Evaluation and related data cascade deactivated: ID {evaluationId} by User {userId}", 
+                        evaluationId, GetUserId(requestingUser));
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    await transaction.RollbackAsync();
+                    _logger.LogError(ex, "Error during cascade deactivation for evaluation {evaluationId}", evaluationId);
+                    throw;
+                }
+            }
+            catch (UnauthorizedAccessException)
+            {
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cascade deactivating evaluation {evaluationId}", evaluationId);
                 throw;
             }
         }

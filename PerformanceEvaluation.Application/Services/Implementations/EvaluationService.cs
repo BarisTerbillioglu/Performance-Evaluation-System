@@ -383,22 +383,84 @@ namespace PerformanceEvaluation.Application.Services.Implementations
                 throw new UnauthorizedAccessException("Only administrators can delete evaluations");
             }
 
-            var evaluation = await _evaluationRepository.GetByIdAsync(evaluationId);
-
-            if (evaluation == null)
+            try
             {
-                return false;
+                var evaluation = await _evaluationRepository.GetByIdAsync(evaluationId);
+
+                if (evaluation == null)
+                {
+                    return false;
+                }
+
+                var result = await _evaluationRepository.DeleteAsync(evaluationId);
+
+                if (result)
+                {
+                    _logger.LogInformation("Evaluation deleted: ID {EvaluationId} by User {UserId}",
+                        evaluationId, GetUserId(user));
+                }
+
+                return result;
             }
-
-            var result = await _evaluationRepository.DeleteAsync(evaluationId);
-
-            if (result)
+            catch (Exception ex)
             {
-                _logger.LogInformation("Evaluation deleted: ID {EvaluationId} by User {UserId}",
-                    evaluationId, GetUserId(user));
+                _logger.LogError(ex, "Error permanently deleting evaluation {EvaluationId}", evaluationId);
+                throw new InvalidOperationException("Error occurred while permanently deleting evaluation");
             }
+        }
 
-            return result;
+        public async Task<bool> DeactivateEvaluationAsync(int evaluationId, ClaimsPrincipal user)
+        {
+            try
+            {
+                return await _evaluationRepository.DeactivateEvaluationAsync(evaluationId, user);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Unauthorized attempt to deactivate evaluation {EvaluationId}: {Message}", evaluationId, ex.Message);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deactivating evaluation {EvaluationId}", evaluationId);
+                throw new InvalidOperationException("An error occurred while deactivating the evaluation");
+            }
+        }
+
+        public async Task<bool> ReactivateEvaluationAsync(int evaluationId, ClaimsPrincipal user)
+        {
+            try
+            {
+                return await _evaluationRepository.ReactivateEvaluationAsync(evaluationId, user);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Unauthorized attempt to reactivate evaluation {EvaluationId}: {Message}", evaluationId, ex.Message);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating evaluation {EvaluationId}", evaluationId);
+                throw new InvalidOperationException("An error occurred while reactivating the evaluation");
+            }
+        }
+
+        public async Task<bool> CascadeDeactivateEvaluationAsync(int evaluationId, ClaimsPrincipal user)
+        {
+            try
+            {
+                return await _evaluationRepository.CascadeDeactivateEvaluationAsync(evaluationId, user);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                _logger.LogWarning("Unauthorized attempt to cascade deactivate evaluation {EvaluationId}: {Message}", evaluationId, ex.Message);
+                throw;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cascade deactivating evaluation {EvaluationId}", evaluationId);
+                throw new InvalidOperationException("An error occurred while cascade deactivating the evaluation");
+            }
         }
 
         public async Task<Evaluation?> GetEvaluationDetailsAsync(int evaluationId, ClaimsPrincipal user)

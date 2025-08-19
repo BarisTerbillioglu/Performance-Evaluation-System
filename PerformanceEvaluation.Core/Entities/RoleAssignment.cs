@@ -11,6 +11,8 @@ namespace PerformanceEvaluation.Core.Entities
         public int UserID { get; set; } //Foreign Key
         public int RoleID { get; set; } //Foreign Key
         public DateTime AssignedDate { get; set; } = DateTime.UtcNow;
+        public bool IsActive { get; set; } = true;
+
 
         // Navigation properties
         public virtual User User { get; set; } = null!;

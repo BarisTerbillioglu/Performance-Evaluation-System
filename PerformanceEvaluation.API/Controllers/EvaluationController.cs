@@ -184,11 +184,95 @@ namespace PerformanceEvaluation.API.Controllers
         }
 
         /// <summary>
-        /// Delete evaluation (Admin only)
+        /// Deactivate evaluation (soft delete)
         /// </summary>
-        [HttpDelete("{id}")]
+        [HttpPatch("{id}/deactivate")]
+        [Authorize(Policy = "EvaluatorOrAdmin")]
+        public async Task<IActionResult> DeactivateEvaluation(int id)
+        {
+            try
+            {
+                var result = await _evaluationService.DeactivateEvaluationAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "Evaluation not found or already inactive" });
+                }
+
+                return Ok(new { message = "Evaluation deactivated successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deactivating evaluation {EvaluationId}", id);
+                return StatusCode(500, new { message = "Error deactivating evaluation" });
+            }
+        }
+
+        /// <summary>
+        /// Reactivate evaluation (Admin only)
+        /// </summary>
+        [HttpPatch("{id}/reactivate")]
         [Authorize(Policy = "AdminOnly")]
-        public async Task<IActionResult> DeleteEvaluation(int id)
+        public async Task<IActionResult> ReactivateEvaluation(int id)
+        {
+            try
+            {
+                var result = await _evaluationService.ReactivateEvaluationAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "Evaluation not found or already active" });
+                }
+
+                return Ok(new { message = "Evaluation reactivated successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating evaluation {EvaluationId}", id);
+                return StatusCode(500, new { message = "Error reactivating evaluation" });
+            }
+        }
+
+        /// <summary>
+        /// Cascade deactivate evaluation and all related data
+        /// </summary>
+        [HttpPatch("{id}/cascade-deactivate")]
+        [Authorize(Policy = "EvaluatorOrAdmin")]
+        public async Task<IActionResult> CascadeDeactivateEvaluation(int id)
+        {
+            try
+            {
+                var result = await _evaluationService.CascadeDeactivateEvaluationAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "Evaluation not found or already inactive" });
+                }
+
+                return Ok(new { message = "Evaluation and related data deactivated successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cascade deactivating evaluation {EvaluationId}", id);
+                return StatusCode(500, new { message = "Error cascade deactivating evaluation" });
+            }
+        }
+
+        /// <summary>
+        /// Permanently delete evaluation (Admin only - use with caution)
+        /// </summary>
+        [HttpDelete("{id}/permanent")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> PermanentlyDeleteEvaluation(int id)
         {
             try
             {
@@ -198,7 +282,7 @@ namespace PerformanceEvaluation.API.Controllers
                     return NotFound(new { message = "Evaluation not found" });
                 }
 
-                return NoContent();
+                return Ok(new { message = "Evaluation permanently deleted" });
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -206,8 +290,8 @@ namespace PerformanceEvaluation.API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting evaluation {EvaluationId}", id);
-                return StatusCode(500, new { message = "Error deleting evaluation" });
+                _logger.LogError(ex, "Error permanently deleting evaluation {EvaluationId}", id);
+                return StatusCode(500, new { message = "Error permanently deleting evaluation" });
             }
         }
 

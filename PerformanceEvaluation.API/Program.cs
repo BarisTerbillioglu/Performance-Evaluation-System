@@ -126,6 +126,14 @@ builder.Services.AddSwaggerGen(c =>
         Scheme = "Bearer"
     });
 
+    c.AddSecurityDefinition("Cookie", new OpenApiSecurityScheme
+    {
+        Description = "Cookie authentication using accessToken cookie",
+        Name = "accessToken",
+        In = ParameterLocation.Cookie,
+        Type = SecuritySchemeType.ApiKey
+    });
+
     c.AddSecurityRequirement(new OpenApiSecurityRequirement
     {
         {
@@ -135,6 +143,17 @@ builder.Services.AddSwaggerGen(c =>
                 {
                     Type = ReferenceType.SecurityScheme,
                     Id = "Bearer"
+                }
+            },
+            new string[] { }
+        },
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Cookie"
                 }
             },
             new string[] { }

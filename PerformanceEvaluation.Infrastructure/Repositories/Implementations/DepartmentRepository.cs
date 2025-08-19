@@ -34,9 +34,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
         public async Task<IEnumerable<Department>> GetAllDepartmentsAsync()
         {
             return await _dbSet
-                .Include(d => d.ID)
-                .Include(d => d.Name)
-                .Include(d => d.Description)
+                .Include(d => d.Users)
                 .ToListAsync();
         }
 
@@ -57,9 +55,6 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             {
                 return await _context.Users
                     .Include(u => u.Department)
-                        .ThenInclude(d => d.Name)
-                    .Include(u => u.FirstName)
-                    .Include(u => u.LastName)
                     .Where(u => u.DepartmentID == departmentId)
                     .Distinct()
                     .ToListAsync();
