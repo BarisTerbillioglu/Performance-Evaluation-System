@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using PerformanceEvaluation.Core.Entities;
 using PerformanceEvaluation.Infrastructure.Data;
@@ -9,7 +10,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
 {
     public class TeamRepository : BaseRepository<Team>, ITeamRepository
     {
-        public TeamRepository(ApplicationDbContext context, ILogger<TeamRepository> logger) 
+        public TeamRepository(ApplicationDbContext context, ILogger<TeamRepository> logger)
             : base(context, logger) { }
 
         public async Task<bool> CanAccessAsync(int id, ClaimsPrincipal user)
@@ -73,6 +74,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                     .ThenInclude(ea => ea.Evaluator)
                 .Include(t => t.EvaluatorAssignments)
                     .ThenInclude(ea => ea.Employee)
+                .Where(t => t.IsActive)
                 .ToListAsync();
         }
 
@@ -84,6 +86,56 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                 .Include(t => t.EvaluatorAssignments.Where(ea => ea.IsActive))
                     .ThenInclude(ea => ea.Employee)
                 .FirstOrDefaultAsync(t => t.ID == teamId);
+        }
+        public async Task<bool> DeactivateAsync(int teamId)
+        {
+            try
+            {
+                var team = await _dbSet.FirstOrDefaultAsync(t => t.ID == teamId && t.IsActive);
+                if (team == null)
+                {
+                    return false;
+                }
+
+                team.IsActive = false;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Team deactivated: ID {teamId}", teamId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deactivating team {teamId}", teamId);
+                throw;
+            }
+        }
+
+        public async Task<bool> ReactivateAsync(int teamId)
+        {
+            try
+            {
+                var team = await _dbSet.FirstOrDefaultAsync(t => t.ID == teamId && !t.IsActive);
+                if (team == null)
+                {
+                    return false;
+                }
+
+                team.IsActive = true;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Team reactivated: ID {teamId}", teamId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating team {teamId}", teamId);
+                throw;
+            }
+        }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _context.Database.BeginTransactionAsync();
         }
     }
 }

@@ -12,5 +12,8 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Interfaces
         Task<RoleAssignment> AddRoleAssignmentAsync(RoleAssignment roleAssignment);
         Task<bool> RemoveRoleAssignmentAsync(int userId, int roleId);
         Task<IEnumerable<RoleAssignment>> GetUserRoleAssignmentsAsync(int userId);
+        Task<IEnumerable<RoleAssignment>> GetRoleAssignmentsAsync(int roleId);
+        Task<bool> ReactivateAsync(int roleId);
+        Task<bool> DeactivateAsync(int roleId);
     }
 }

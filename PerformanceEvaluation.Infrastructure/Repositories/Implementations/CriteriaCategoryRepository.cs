@@ -1,5 +1,6 @@
 using System.Security.Claims;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Logging;
 using PerformanceEvaluation.Core.Entities;
 using PerformanceEvaluation.Infrastructure.Data;
@@ -9,7 +10,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
 {
     public class CriteriaCategoryRepository : BaseRepository<CriteriaCategory>, ICriteriaCategoryRepository
     {
-        public CriteriaCategoryRepository(ApplicationDbContext context, ILogger<CriteriaCategoryRepository> logger) 
+        public CriteriaCategoryRepository(ApplicationDbContext context, ILogger<CriteriaCategoryRepository> logger)
             : base(context, logger) { }
 
         public async Task<bool> CanAccessAsync(int id, ClaimsPrincipal user)
@@ -49,6 +50,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
         {
             return await _dbSet
                 .Include(cc => cc.Criteria)
+                .Where(cc => cc.IsActive)
                 .OrderBy(cc => cc.Name)
                 .ToListAsync();
         }
@@ -82,6 +84,64 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             return await _dbSet
                 .Where(cc => cc.IsActive)
                 .SumAsync(cc => cc.Weight);
+        }
+        
+        public async Task<bool> DeactivateAsync(int categoryId)
+        {
+            try
+            {
+                var category = await _dbSet.FirstOrDefaultAsync(c => c.ID == categoryId && c.IsActive);
+                if (category == null)
+                {
+                    return false;
+                }
+
+                category.IsActive = false;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Criteria category deactivated: ID {categoryId}", categoryId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deactivating criteria category {categoryId}", categoryId);
+                throw;
+            }
+        }
+
+        public async Task<bool> ReactivateAsync(int categoryId)
+        {
+            try
+            {
+                var category = await _dbSet.FirstOrDefaultAsync(c => c.ID == categoryId && !c.IsActive);
+                if (category == null)
+                {
+                    return false;
+                }
+
+                category.IsActive = true;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Criteria category reactivated: ID {categoryId}", categoryId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating criteria category {categoryId}", categoryId);
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<Criteria>> GetCategoryCriteriaAsync(int categoryId)
+        {
+            return await _context.Criteria
+                .Where(c => c.CategoryID == categoryId)
+                .ToListAsync();
+        }
+
+        public async Task<IDbContextTransaction> BeginTransactionAsync()
+        {
+            return await _context.Database.BeginTransactionAsync();
         }
     }
 }

@@ -12,11 +12,24 @@ using PerformanceEvaluation.Infrastructure.Services.Interfaces;
 using PerformanceEvaluation.Infrastructure.Services.Implementations;
 using PerformanceEvaluation.Infrastructure.Repositories.Interfaces;
 using PerformanceEvaluation.Infrastructure.Repositories.Implementation;
+using System.Text.Json.Serialization;
 
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
+builder.Services.ConfigureHttpJsonOptions(options =>
+{
+    options.SerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    options.SerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+});
+
+builder.Services.AddControllers()
+    .AddJsonOptions(options =>
+    {
+        options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+        options.JsonSerializerOptions.DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull;
+    });
 
 // Database Configuration - Azure SQL Server
 builder.Services.AddDbContext<ApplicationDbContext>(options =>

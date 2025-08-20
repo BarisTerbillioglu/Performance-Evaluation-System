@@ -7,6 +7,9 @@ namespace PerformanceEvaluation.Application.Services.Interfaces
     {
         Task<RoleDto> CreateRoleAsync(CreateRoleRequest request, ClaimsPrincipal user);
         Task<RoleDto?> UpdateRoleAsync(int id, UpdateRoleRequest request, ClaimsPrincipal user);
+        Task<bool> CascadeDeactivateRoleAsync(int id, ClaimsPrincipal user);
+        Task<bool> ReactivateRoleAsync(int id, ClaimsPrincipal user);
+        Task<bool> DeactivateRoleAsync(int id, ClaimsPrincipal user);
         Task<bool> DeleteRoleAsync(int id, ClaimsPrincipal user);
         Task<IEnumerable<RoleDto>> GetAllRolesAsync(ClaimsPrincipal user);
         Task<RoleDto?> GetRoleByIdAsync(int id, ClaimsPrincipal user);

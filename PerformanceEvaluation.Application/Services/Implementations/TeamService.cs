@@ -75,25 +75,105 @@ namespace PerformanceEvaluation.Application.Services.Implementations
             return MapToDto(updatedTeam);
         }
 
+        public async Task<bool> DeactivateTeamAsync(int id, ClaimsPrincipal user)
+        {
+            if (!user.IsInRole("Admin"))
+            {
+                throw new UnauthorizedAccessException("Only administrators can deactivate teams");
+            }
+
+            var result = await _teamRepository.DeactivateAsync(id);
+
+            if (result)
+            {
+                _logger.LogInformation("Team deactivated: ID {TeamId} by Admin {UserId}", 
+                    id, GetUserId(user));
+            }
+
+            return result;
+        }
+
+        public async Task<bool> ReactivateTeamAsync(int id, ClaimsPrincipal user)
+        {
+            if (!user.IsInRole("Admin"))
+            {
+                throw new UnauthorizedAccessException("Only administrators can reactivate teams");
+            }
+
+            var result = await _teamRepository.ReactivateAsync(id);
+
+            if (result)
+            {
+                _logger.LogInformation("Team reactivated: ID {TeamId} by Admin {UserId}", 
+                    id, GetUserId(user));
+            }
+
+            return result;
+        }
+
+        public async Task<bool> CascadeDeactivateTeamAsync(int id, ClaimsPrincipal user)
+        {
+            if (!user.IsInRole("Admin"))
+            {
+                throw new UnauthorizedAccessException("Only administrators can cascade deactivate teams");
+            }
+
+            var team = await _teamRepository.GetByIdAsync(id);
+            if (team == null)
+            {
+                return false;
+            }
+
+            using var transaction = await _teamRepository.BeginTransactionAsync();
+            
+            try
+            {
+                // Deactivate all team assignments first
+                var assignments = await _evaluatorAssignmentRepository.GetTeamAssignmentsAsync(id);
+                foreach (var assignment in assignments.Where(a => a.IsActive))
+                {
+                    await _evaluatorAssignmentRepository.DeactivateAssignmentAsync(assignment.ID);
+                }
+
+                // Then deactivate the team
+                await _teamRepository.DeactivateAsync(id);
+
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("Team and assignments cascade deactivated: ID {TeamId} by Admin {UserId}", 
+                    id, GetUserId(user));
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error during cascade deactivation for team {TeamId}", id);
+                throw;
+            }
+        }
+
         public async Task<bool> DeleteTeamAsync(int id, ClaimsPrincipal user)
         {
             if (!user.IsInRole("Admin"))
             {
-                throw new UnauthorizedAccessException("Only administrators can delete teams");
+                throw new UnauthorizedAccessException("Only administrators can permanently delete teams");
             }
 
-            // Check if team has active assignments
+            // For permanent deletion, check ALL assignments (active and inactive)
             var assignments = await _evaluatorAssignmentRepository.GetTeamAssignmentsAsync(id);
-            if (assignments.Any(a => a.IsActive))
+            if (assignments.Any()) // ANY assignments, not just active ones
             {
-                throw new InvalidOperationException("Cannot delete team with active evaluator assignments");
+                throw new InvalidOperationException(
+                    $"Cannot permanently delete team. Team has {assignments.Count()} assignment(s) (active and inactive). " +
+                    "Consider using cascade deactivation instead.");
             }
 
             var result = await _teamRepository.DeleteAsync(id);
 
             if (result)
             {
-                _logger.LogInformation("Team deleted: ID {TeamId} by User {UserId}", 
+                _logger.LogWarning("Team permanently deleted: ID {TeamId} by Admin {UserId}", 
                     id, GetUserId(user));
             }
 
@@ -172,14 +252,14 @@ namespace PerformanceEvaluation.Application.Services.Implementations
                 throw new ArgumentException("Team not found");
             }
 
-            var evaluator = await _userRepository.GetByIdAsync(request.EvaluatorId);
+            var evaluator = await _userRepository.GetByIdWithRolesAsync(request.EvaluatorId);
             if (evaluator == null)
             {
                 throw new ArgumentException("Evaluator not found");
             }
 
             // Check if evaluator has the Evaluator role
-            var evaluatorRole = evaluator.RoleAssignments.Any(ra => ra.RoleID == 2); // Evaluator role ID
+            var evaluatorRole = evaluator.RoleAssignments.Any(ra => ra.RoleID == 2 && ra.IsActive); 
             if (!evaluatorRole)
             {
                 throw new ArgumentException("User must have Evaluator role");
@@ -188,12 +268,27 @@ namespace PerformanceEvaluation.Application.Services.Implementations
             // Check if assignment already exists
             var existingAssignment = await _evaluatorAssignmentRepository
                 .GetEvaluatorTeamAssignmentAsync(request.EvaluatorId, request.TeamId);
-            
+
             if (existingAssignment != null && existingAssignment.IsActive)
             {
                 throw new InvalidOperationException("Evaluator is already assigned to this team");
             }
 
+            else if (existingAssignment != null && !existingAssignment.IsActive)
+            {
+                var reactivate = await _evaluatorAssignmentRepository.ReactivateAssignmentAsync(existingAssignment.ID);
+
+                return new TeamAssignmentDto
+            {
+                Id = existingAssignment.ID,
+                TeamId = existingAssignment.TeamID,
+                EvaluatorId = existingAssignment.EvaluatorID,
+                EmployeeId = existingAssignment.EmployeeID,
+                AssignedDate = existingAssignment.AssignedDate,
+                IsActive = existingAssignment.IsActive
+            };
+            }
+        
             var assignment = new EvaluatorAssignment
             {
                 EvaluatorID = request.EvaluatorId,

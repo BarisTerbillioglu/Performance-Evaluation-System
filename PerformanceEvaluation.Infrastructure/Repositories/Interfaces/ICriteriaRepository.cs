@@ -16,9 +16,13 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Interfaces
 
         // Evaluation-specific
         Task<IEnumerable<Criteria>> GetActiveCriteriaForEvaluationAsync();
-        
+
         Task<RoleCriteriaDescription> AddRoleDescriptionAsync(RoleCriteriaDescription roleDescription);
         Task<RoleCriteriaDescription?> UpdateRoleDescriptionAsync(int id, string description, string? example);
         Task<bool> DeleteRoleDescriptionAsync(int id);
+        Task<bool> HasEvaluationScoresAsync(int criteriaId);
+        Task<bool> HasActiveEvaluationScoresAsync(int criteriaId);
+        Task<bool> ReactivateAsync(int criteriaId);
+        Task<bool> DeactivateAsync(int criteriaId);
     }
 }

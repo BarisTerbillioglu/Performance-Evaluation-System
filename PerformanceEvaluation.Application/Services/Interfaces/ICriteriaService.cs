@@ -8,6 +8,9 @@ namespace PerformanceEvaluation.Application.Services.Interfaces
     {
         Task<CriteriaDto> CreateCriteriaAsync(CreateCriteriaRequest request, ClaimsPrincipal user);
         Task<CriteriaDto?> UpdateCriteriaAsync(int id, UpdateCriteriaRequest request, ClaimsPrincipal user);
+        Task<bool> CascadeDeactivateCriteriaAsync(int id, ClaimsPrincipal user);
+        Task<bool> ReactivateCriteriaAsync(int id, ClaimsPrincipal user);
+        Task<bool> DeactivateCriteriaAsync(int id, ClaimsPrincipal user);
         Task<bool> DeleteCriteriaAsync(int id, ClaimsPrincipal user);
         Task<IEnumerable<CriteriaDto>> GetAllCriteriaAsync(ClaimsPrincipal user);
         Task<CriteriaDto?> GetCriteriaByIdAsync(int id, ClaimsPrincipal user);

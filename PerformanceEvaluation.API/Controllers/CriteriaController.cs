@@ -132,34 +132,6 @@ namespace PerformanceEvaluation.API.Controllers
         }
 
         /// <summary>
-        /// Delete criteria (Admin only)
-        /// </summary>
-        [HttpDelete("{id}")]
-        [Authorize(Policy = "AdminOnly")]
-        public async Task<IActionResult> DeleteCriteria(int id)
-        {
-            try
-            {
-                var result = await _criteriaService.DeleteCriteriaAsync(id, User);
-                if (!result)
-                {
-                    return NotFound(new { message = "Criteria not found" });
-                }
-
-                return NoContent();
-            }
-            catch (UnauthorizedAccessException ex)
-            {
-                return Forbid(ex.Message);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Error deleting criteria {CriteriaId}", id);
-                return StatusCode(500, new { message = "Error deleting criteria" });
-            }
-        }
-
-        /// <summary>
         /// Get criteria by category
         /// </summary>
         [HttpGet("categories/{categoryId}/criteria")]
@@ -309,21 +281,21 @@ namespace PerformanceEvaluation.API.Controllers
         }
 
         /// <summary>
-        /// Delete role-specific description (Admin only)
+        /// Deactivate criteria (soft delete)
         /// </summary>
-        [HttpDelete("role-descriptions/{id}")]
+        [HttpPatch("{id}/deactivate")]
         [Authorize(Policy = "AdminOnly")]
-        public async Task<IActionResult> DeleteRoleDescription(int id)
+        public async Task<IActionResult> DeactivateCriteria(int id)
         {
             try
             {
-                var result = await _criteriaService.DeleteRoleDescriptionAsync(id, User);
+                var result = await _criteriaService.DeactivateCriteriaAsync(id, User);
                 if (!result)
                 {
-                    return NotFound(new { message = "Role description not found" });
+                    return NotFound(new { message = "Criteria not found or already inactive" });
                 }
 
-                return NoContent();
+                return Ok(new { message = "Criteria deactivated successfully" });
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -331,8 +303,100 @@ namespace PerformanceEvaluation.API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting role description {DescriptionId}", id);
-                return StatusCode(500, new { message = "Error deleting role description" });
+                _logger.LogError(ex, "Error deactivating criteria {Id}", id);
+                return StatusCode(500, new { message = "Error deactivating criteria" });
+            }
+        }
+
+        /// <summary>
+        /// Reactivate criteria
+        /// </summary>
+        [HttpPatch("{id}/reactivate")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> ReactivateCriteria(int id)
+        {
+            try
+            {
+                var result = await _criteriaService.ReactivateCriteriaAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "Criteria not found or already active" });
+                }
+
+                return Ok(new { message = "Criteria reactivated successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating criteria {Id}", id);
+                return StatusCode(500, new { message = "Error reactivating criteria" });
+            }
+        }
+
+        /// <summary>
+        /// Cascade deactivate criteria
+        /// </summary>
+        [HttpPatch("{id}/cascade-deactivate")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> CascadeDeactivateCriteria(int id)
+        {
+            try
+            {
+                var result = await _criteriaService.CascadeDeactivateCriteriaAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "Criteria not found" });
+                }
+
+                return Ok(new { message = "Criteria deactivated successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cascade deactivating criteria {Id}", id);
+                return StatusCode(500, new { message = "Error cascade deactivating criteria" });
+            }
+        }
+
+        /// <summary>
+        /// Permanently delete criteria
+        /// </summary>
+        [HttpDelete("{id}/permanent")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> PermanentlyDeleteCriteria(int id)
+        {
+            try
+            {
+                var result = await _criteriaService.DeleteCriteriaAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "Criteria not found" });
+                }
+
+                return Ok(new { message = "Criteria permanently deleted" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error permanently deleting criteria {Id}", id);
+                return StatusCode(500, new { message = "Error permanently deleting criteria" });
             }
         }
     }

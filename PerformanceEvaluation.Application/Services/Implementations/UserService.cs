@@ -242,7 +242,7 @@ namespace PerformanceEvaluation.Application.Services.Implementations
         public async Task<IEnumerable<EvaluatorListDto>> GetEvaluatorListAsync(ClaimsPrincipal user)
         {
             var users = await _userRepository.GetAllAsync(user);
-            var evaluators = users.Where(u => u.RoleAssignments.Any(ra => ra.RoleID == 2)); // Evaluator role
+            var evaluators = users.Where(u => u.RoleAssignments.Any(ra => ra.RoleID == 2)); 
 
             return evaluators.Select(e => new EvaluatorListDto
             {

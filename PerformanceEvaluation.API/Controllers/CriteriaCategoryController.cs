@@ -131,25 +131,21 @@ namespace PerformanceEvaluation.API.Controllers
         }
 
         /// <summary>
-        /// Delete criteria category (Admin only)
+        /// Deactivate criteria category (soft delete)
         /// </summary>
-        [HttpDelete("{id}")]
+        [HttpPatch("{id}/deactivate")]
         [Authorize(Policy = "AdminOnly")]
-        public async Task<IActionResult> DeleteCategory(int id)
+        public async Task<IActionResult> DeactivateCriteriaCategory(int id)
         {
             try
             {
-                var result = await _categoryService.DeleteCategoryAsync(id, User);
+                var result = await _categoryService.DeactivateCriteriaCategoryAsync(id, User);
                 if (!result)
                 {
-                    return NotFound(new { message = "Category not found" });
+                    return NotFound(new { message = "Criteria category not found or already inactive" });
                 }
 
-                return NoContent();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
+                return Ok(new { message = "Criteria category deactivated successfully" });
             }
             catch (UnauthorizedAccessException ex)
             {
@@ -157,8 +153,100 @@ namespace PerformanceEvaluation.API.Controllers
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting criteria category {CategoryId}", id);
-                return StatusCode(500, new { message = "Error deleting criteria category" });
+                _logger.LogError(ex, "Error deactivating criteria category {Id}", id);
+                return StatusCode(500, new { message = "Error deactivating criteria category" });
+            }
+        }
+
+        /// <summary>
+        /// Reactivate criteria category
+        /// </summary>
+        [HttpPatch("{id}/reactivate")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> ReactivateCriteriaCategory(int id)
+        {
+            try
+            {
+                var result = await _categoryService.ReactivateCriteriaCategoryAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "Criteria category not found or already active" });
+                }
+
+                return Ok(new { message = "Criteria category reactivated successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating criteria category {Id}", id);
+                return StatusCode(500, new { message = "Error reactivating criteria category" });
+            }
+        }
+
+        /// <summary>
+        /// Cascade deactivate criteria category and all criteria
+        /// </summary>
+        [HttpPatch("{id}/cascade-deactivate")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> CascadeDeactivateCriteriaCategory(int id)
+        {
+            try
+            {
+                var result = await _categoryService.CascadeDeactivateCriteriaCategoryAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "Criteria category not found" });
+                }
+
+                return Ok(new { message = "Criteria category and criteria deactivated successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cascade deactivating criteria category {Id}", id);
+                return StatusCode(500, new { message = "Error cascade deactivating criteria category" });
+            }
+        }
+
+        /// <summary>
+        /// Permanently delete criteria category
+        /// </summary>
+        [HttpDelete("{id}/permanent")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> PermanentlyDeleteCriteriaCategory(int id)
+        {
+            try
+            {
+                var result = await _categoryService.DeleteCriteriaCategoryAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "Criteria category not found" });
+                }
+
+                return Ok(new { message = "Criteria category permanently deleted" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error permanently deleting criteria category {Id}", id);
+                return StatusCode(500, new { message = "Error permanently deleting criteria category" });
             }
         }
 

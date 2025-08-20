@@ -87,14 +87,69 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             return true;
         }
 
+        public async Task<bool> DeactivateAsync(int roleId)
+        {
+            try
+            {
+                var role = await _dbSet.FirstOrDefaultAsync(r => r.ID == roleId && r.IsActive);
+                if (role == null)
+                {
+                    return false;
+                }
+
+                role.IsActive = false;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Role deactivated: ID {roleId}", roleId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deactivating role {roleId}", roleId);
+                throw;
+            }
+        }
+
+        public async Task<bool> ReactivateAsync(int roleId)
+        {
+            try
+            {
+                var role = await _dbSet.FirstOrDefaultAsync(r => r.ID == roleId && !r.IsActive);
+                if (role == null)
+                {
+                    return false;
+                }
+
+                role.IsActive = true;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Role reactivated: ID {roleId}", roleId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating role {roleId}", roleId);
+                throw;
+            }
+        }
+
+        public async Task<IEnumerable<RoleAssignment>> GetRoleAssignmentsAsync(int roleId)
+        {
+            return await _context.RoleAssignments
+                .Include(ra => ra.User)
+                .Where(ra => ra.RoleID == roleId)
+                .ToListAsync();
+        }
+
         public async Task<IEnumerable<RoleAssignment>> GetUserRoleAssignmentsAsync(int userId)
         {
             return await _context.RoleAssignments
                 .Include(ra => ra.Role)
                 .Include(ra => ra.User)
-                .Where(ra => ra.UserID == userId)
+                .Where(ra => ra.UserID == userId && ra.IsActive)
                 .OrderBy(ra => ra.Role.Name)
                 .ToListAsync();
         }
+        
     }
 }

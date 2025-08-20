@@ -130,8 +130,11 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
         {
             var query = _dbSet
                 .Include(e => e.Evaluator)
+                    .ThenInclude(evaluator => evaluator.RoleAssignments.Where(ra => ra.IsActive))
+                        .ThenInclude(ra => ra.Role)
                 .Include(e => e.Employee)
-                    .ThenInclude(emp => emp.Department)
+                    .ThenInclude(employee => employee.RoleAssignments.Where(ra => ra.IsActive))
+                        .ThenInclude(ra => ra.Role)
                 .Include(e => e.EvaluationScores)
                     .ThenInclude(es => es.Criteria)
                         .ThenInclude(c => c.CriteriaCategory)
@@ -160,7 +163,6 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             return await _dbSet
                 .Include(e => e.Evaluator)
                 .Include(e => e.Employee)
-                    .ThenInclude(emp => emp.Department)
                 .Include(e => e.EvaluationScores)
                     .ThenInclude(es => es.Criteria)
                         .ThenInclude(c => c.CriteriaCategory)
@@ -244,7 +246,6 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
         {
             return await _dbSet
                 .Include(e => e.Employee)
-                    .ThenInclude(emp => emp.Department)
                 .Include(e => e.EvaluationScores)
                     .ThenInclude(es => es.Criteria)
                         .ThenInclude(c => c.CriteriaCategory)
@@ -258,6 +259,8 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
         {
             return await _dbSet
                 .Include(e => e.Evaluator)
+                .Include(e => e.Employee) 
+                    .ThenInclude(emp => emp.Department)
                 .Include(e => e.EvaluationScores)
                     .ThenInclude(es => es.Criteria)
                         .ThenInclude(c => c.CriteriaCategory)
@@ -278,6 +281,8 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
 
             return await _dbSet
                 .Include(e => e.Evaluator)
+                .Include(e => e.Employee) 
+                    .ThenInclude(emp => emp.Department)
                 .Include(e => e.EvaluationScores)
                     .ThenInclude(es => es.Criteria)
                         .ThenInclude(c => c.CriteriaCategory)
@@ -438,6 +443,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
 
             return await _dbSet
                 .Include(e => e.Employee)
+                    .ThenInclude(emp => emp.Department)
                 .Include(e => e.Evaluator)
                 .Include(e => e.EvaluationScores) 
                 .FirstOrDefaultAsync(e => e.ID == evaluationId);
@@ -530,16 +536,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
         {
             try
             {
-                var evaluatorId = GetUserId(user);
-                
-                // Validate evaluator can evaluate this employee
-                var canEvaluate = await CanEvaluateEmployeeAsync(evaluatorId, employeeId);
-                if (!canEvaluate)
-                {
-                    _logger.LogWarning("Evaluator {EvaluatorId} attempted to evaluate employee {EmployeeId} without permission", 
-                        evaluatorId, employeeId);
-                    throw new UnauthorizedAccessException("Cannot evaluate this employee");
-                }
+                var evaluatorId = GetUserId(user);                
 
                 var evaluation = new Evaluation
                 {
@@ -742,7 +739,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                 throw;
             }
         }
-        
+
         private IQueryable<Evaluation> GetBaseEvaluationQuery()
         {
             return _dbSet
@@ -756,7 +753,6 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             return _dbSet
                 .Include(e => e.Evaluator)
                 .Include(e => e.Employee)
-                    .ThenInclude(emp => emp.Department)
                 .Include(e => e.EvaluationScores)
                     .ThenInclude(es => es.Criteria)
                         .ThenInclude(c => c.CriteriaCategory);

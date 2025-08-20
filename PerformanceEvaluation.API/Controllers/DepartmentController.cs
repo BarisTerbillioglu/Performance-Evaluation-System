@@ -123,11 +123,99 @@ namespace PerformanceEvaluation.API.Controllers
         }
 
         /// <summary>
-        /// Delete department (Admin only)
+        /// Deactivate department (soft delete)
         /// </summary>
-        [HttpDelete("{id}")]
+        [HttpPatch("{id}/deactivate")]
         [Authorize(Policy = "AdminOnly")]
-        public async Task<IActionResult> DeleteDepartment(int id)
+        public async Task<IActionResult> DeactivateDepartment(int id)
+        {
+            try
+            {
+                var result = await _departmentService.DeactivateDepartmentAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "Department not found or already inactive" });
+                }
+
+                return Ok(new { message = "Department deactivated successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deactivating department {Id}", id);
+                return StatusCode(500, new { message = "Error deactivating department" });
+            }
+        }
+
+        /// <summary>
+        /// Reactivate department
+        /// </summary>
+        [HttpPatch("{id}/reactivate")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> ReactivateDepartment(int id)
+        {
+            try
+            {
+                var result = await _departmentService.ReactivateDepartmentAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "Department not found or already active" });
+                }
+
+                return Ok(new { message = "Department reactivated successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating department {Id}", id);
+                return StatusCode(500, new { message = "Error reactivating department" });
+            }
+        }
+
+        /// <summary>
+        /// Cascade deactivate department
+        /// </summary>
+        [HttpPatch("{id}/cascade-deactivate")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> CascadeDeactivateDepartment(int id)
+        {
+            try
+            {
+                var result = await _departmentService.CascadeDeactivateDepartmentAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "Department not found" });
+                }
+
+                return Ok(new { message = "Department deactivated successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cascade deactivating department {Id}", id);
+                return StatusCode(500, new { message = "Error cascade deactivating department" });
+            }
+        }
+
+        /// <summary>
+        /// Permanently delete department
+        /// </summary>
+        [HttpDelete("{id}/permanent")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> PermanentlyDeleteDepartment(int id)
         {
             try
             {
@@ -137,20 +225,20 @@ namespace PerformanceEvaluation.API.Controllers
                     return NotFound(new { message = "Department not found" });
                 }
 
-                return NoContent();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
+                return Ok(new { message = "Department permanently deleted" });
             }
             catch (UnauthorizedAccessException ex)
             {
                 return Forbid(ex.Message);
             }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting department {DepartmentId}", id);
-                return StatusCode(500, new { message = "Error deleting department" });
+                _logger.LogError(ex, "Error permanently deleting department {Id}", id);
+                return StatusCode(500, new { message = "Error permanently deleting department" });
             }
         }
 

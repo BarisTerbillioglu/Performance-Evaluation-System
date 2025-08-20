@@ -72,25 +72,96 @@ namespace PerformanceEvaluation.Application.Services.Implementations
             return MapToDto(updatedDepartment);
         }
 
+        public async Task<bool> DeactivateDepartmentAsync(int id, ClaimsPrincipal user)
+        {
+            if (!user.IsInRole("Admin"))
+            {
+                throw new UnauthorizedAccessException("Only administrators can deactivate departments");
+            }
+
+            var result = await _departmentRepository.DeactivateAsync(id);
+
+            if (result)
+            {
+                _logger.LogInformation("Department deactivated: ID {DepartmentId} by Admin {UserId}", 
+                    id, GetUserId(user));
+            }
+
+            return result;
+        }
+
+        public async Task<bool> ReactivateDepartmentAsync(int id, ClaimsPrincipal user)
+        {
+            if (!user.IsInRole("Admin"))
+            {
+                throw new UnauthorizedAccessException("Only administrators can reactivate departments");
+            }
+
+            var result = await _departmentRepository.ReactivateAsync(id);
+
+            if (result)
+            {
+                _logger.LogInformation("Department reactivated: ID {DepartmentId} by Admin {UserId}", 
+                    id, GetUserId(user));
+            }
+
+            return result;
+        }
+
+        public async Task<bool> CascadeDeactivateDepartmentAsync(int id, ClaimsPrincipal user)
+        {
+            if (!user.IsInRole("Admin"))
+            {
+                throw new UnauthorizedAccessException("Only administrators can cascade deactivate departments");
+            }
+
+            var department = await _departmentRepository.GetByIdAsync(id);
+            if (department == null)
+            {
+                return false;
+            }
+
+            // Check if department has users
+            var users = await _departmentRepository.GetDepartmentUsersAsync(id, user);
+            if (users.Any(u => u.IsActive))
+            {
+                throw new InvalidOperationException(
+                    $"Cannot deactivate department. Department has {users.Count(u => u.IsActive)} active user(s). " +
+                    "Please deactivate or move users first.");
+            }
+
+            var result = await _departmentRepository.DeactivateAsync(id);
+
+            if (result)
+            {
+                _logger.LogInformation("Department cascade deactivated: ID {DepartmentId} by Admin {UserId}", 
+                    id, GetUserId(user));
+            }
+
+            return result;
+        }
+
         public async Task<bool> DeleteDepartmentAsync(int id, ClaimsPrincipal user)
         {
             if (!user.IsInRole("Admin"))
             {
-                throw new UnauthorizedAccessException("Only administrators can delete departments");
+                throw new UnauthorizedAccessException("Only administrators can permanently delete departments");
             }
 
-            // Check if department has users
-            var users = await _userRepository.GetUsersByDepartmentAsync(id, user);
+            // Check if department has ANY users (active or inactive)
+            var users = await _departmentRepository.GetDepartmentUsersAsync(id, user);
             if (users.Any())
             {
-                throw new InvalidOperationException("Cannot delete department with existing users");
+                throw new InvalidOperationException(
+                    $"Cannot permanently delete department. Department has {users.Count()} user(s). " +
+                    "Consider using deactivation instead.");
             }
 
             var result = await _departmentRepository.DeleteAsync(id);
 
             if (result)
             {
-                _logger.LogInformation("Department deleted: ID {DepartmentId} by User {UserId}", 
+                _logger.LogWarning("Department permanently deleted: ID {DepartmentId} by Admin {UserId}", 
                     id, GetUserId(user));
             }
 
@@ -162,8 +233,8 @@ namespace PerformanceEvaluation.Application.Services.Implementations
                 TotalUsers = users.Count(),
                 ActiveUsers = activeUsers.Count,
                 InactiveUsers = users.Count() - activeUsers.Count,
-                Evaluators = activeUsers.Count(u => u.RoleAssignments.Any(ra => ra.RoleID == 2)), // Evaluator role
-                Employees = activeUsers.Count(u => u.RoleAssignments.Any(ra => ra.RoleID == 3))  // Employee role
+                Evaluators = activeUsers.Count(u => u.RoleAssignments.Any(ra => ra.RoleID == 2)), 
+                Employees = activeUsers.Count(u => u.RoleAssignments.Any(ra => ra.RoleID == 3))  
             };
         }
 

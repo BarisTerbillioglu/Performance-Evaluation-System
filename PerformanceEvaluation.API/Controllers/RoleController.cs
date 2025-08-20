@@ -197,11 +197,103 @@ namespace PerformanceEvaluation.API.Controllers
         }
 
         /// <summary>
-        /// Delete role (Admin only)
+        /// Deactivate role (soft delete)
         /// </summary>
-        [HttpDelete("{id}")]
+        [HttpPatch("{id}/deactivate")]
         [Authorize(Policy = "AdminOnly")]
-        public async Task<IActionResult> DeleteRole(int id)
+        public async Task<IActionResult> DeactivateRole(int id)
+        {
+            try
+            {
+                var result = await _roleService.DeactivateRoleAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "Role not found or already inactive" });
+                }
+
+                return Ok(new { message = "Role deactivated successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deactivating role {Id}", id);
+                return StatusCode(500, new { message = "Error deactivating role" });
+            }
+        }
+
+        /// <summary>
+        /// Reactivate role
+        /// </summary>
+        [HttpPatch("{id}/reactivate")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> ReactivateRole(int id)
+        {
+            try
+            {
+                var result = await _roleService.ReactivateRoleAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "Role not found or already active" });
+                }
+
+                return Ok(new { message = "Role reactivated successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating role {Id}", id);
+                return StatusCode(500, new { message = "Error reactivating role" });
+            }
+        }
+
+        /// <summary>
+        /// Cascade deactivate role
+        /// </summary>
+        [HttpPatch("{id}/cascade-deactivate")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> CascadeDeactivateRole(int id)
+        {
+            try
+            {
+                var result = await _roleService.CascadeDeactivateRoleAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "Role not found" });
+                }
+
+                return Ok(new { message = "Role deactivated successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cascade deactivating role {Id}", id);
+                return StatusCode(500, new { message = "Error cascade deactivating role" });
+            }
+        }
+
+        /// <summary>
+        /// Permanently delete role
+        /// </summary>
+        [HttpDelete("{id}/permanent")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> PermanentlyDeleteRole(int id)
         {
             try
             {
@@ -211,20 +303,20 @@ namespace PerformanceEvaluation.API.Controllers
                     return NotFound(new { message = "Role not found" });
                 }
 
-                return NoContent();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
+                return Ok(new { message = "Role permanently deleted" });
             }
             catch (UnauthorizedAccessException ex)
             {
                 return Forbid(ex.Message);
             }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting role {RoleId}", id);
-                return StatusCode(500, new { message = "Error deleting role" });
+                _logger.LogError(ex, "Error permanently deleting role {Id}", id);
+                return StatusCode(500, new { message = "Error permanently deleting role" });
             }
         }
 

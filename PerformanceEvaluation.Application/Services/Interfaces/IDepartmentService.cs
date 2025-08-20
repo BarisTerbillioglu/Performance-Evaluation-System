@@ -7,6 +7,9 @@ namespace PerformanceEvaluation.Application.Services.Interfaces
     {
         Task<DepartmentDto> CreateDepartmentAsync(CreateDepartmentRequest request, ClaimsPrincipal user);
         Task<DepartmentDto?> UpdateDepartmentAsync(int id, UpdateDepartmentRequest request, ClaimsPrincipal user);
+        Task<bool> DeactivateDepartmentAsync(int id, ClaimsPrincipal user);
+        Task<bool> ReactivateDepartmentAsync(int id, ClaimsPrincipal user);
+        Task<bool> CascadeDeactivateDepartmentAsync(int id, ClaimsPrincipal user);
         Task<bool> DeleteDepartmentAsync(int id, ClaimsPrincipal user);
         Task<IEnumerable<DepartmentDto>> GetAllDepartmentsAsync(ClaimsPrincipal user);
         Task<DepartmentDto?> GetDepartmentByIdAsync(int id, ClaimsPrincipal user);

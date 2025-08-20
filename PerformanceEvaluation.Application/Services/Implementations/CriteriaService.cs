@@ -92,18 +92,96 @@ namespace PerformanceEvaluation.Application.Services.Implementations
             return MapToDto(updatedCriteria);
         }
 
+        public async Task<bool> DeactivateCriteriaAsync(int id, ClaimsPrincipal user)
+        {
+            if (!user.IsInRole("Admin"))
+            {
+                throw new UnauthorizedAccessException("Only administrators can deactivate criteria");
+            }
+
+            var result = await _criteriaRepository.DeactivateAsync(id);
+
+            if (result)
+            {
+                _logger.LogInformation("Criteria deactivated: ID {CriteriaId} by Admin {UserId}", 
+                    id, GetUserId(user));
+            }
+
+            return result;
+        }
+
+        public async Task<bool> ReactivateCriteriaAsync(int id, ClaimsPrincipal user)
+        {
+            if (!user.IsInRole("Admin"))
+            {
+                throw new UnauthorizedAccessException("Only administrators can reactivate criteria");
+            }
+
+            var result = await _criteriaRepository.ReactivateAsync(id);
+
+            if (result)
+            {
+                _logger.LogInformation("Criteria reactivated: ID {CriteriaId} by Admin {UserId}", 
+                    id, GetUserId(user));
+            }
+
+            return result;
+        }
+
+        public async Task<bool> CascadeDeactivateCriteriaAsync(int id, ClaimsPrincipal user)
+        {
+            if (!user.IsInRole("Admin"))
+            {
+                throw new UnauthorizedAccessException("Only administrators can cascade deactivate criteria");
+            }
+
+            var criteria = await _criteriaRepository.GetByIdAsync(id);
+            if (criteria == null)
+            {
+                return false;
+            }
+
+            // Check for active evaluation scores using this criteria
+            var hasActiveScores = await _criteriaRepository.HasActiveEvaluationScoresAsync(id);
+            if (hasActiveScores)
+            {
+                throw new InvalidOperationException(
+                    "Cannot deactivate criteria. Criteria is being used in active evaluations. " +
+                    "Complete or deactivate related evaluations first.");
+            }
+
+            var result = await _criteriaRepository.DeactivateAsync(id);
+
+            if (result)
+            {
+                _logger.LogInformation("Criteria cascade deactivated: ID {CriteriaId} by Admin {UserId}", 
+                    id, GetUserId(user));
+            }
+
+            return result;
+        }
+
         public async Task<bool> DeleteCriteriaAsync(int id, ClaimsPrincipal user)
         {
             if (!user.IsInRole("Admin"))
             {
-                throw new UnauthorizedAccessException("Only administrators can delete criteria");
+                throw new UnauthorizedAccessException("Only administrators can permanently delete criteria");
+            }
+
+            // Check for ANY evaluation scores (active or inactive)
+            var hasScores = await _criteriaRepository.HasEvaluationScoresAsync(id);
+            if (hasScores)
+            {
+                throw new InvalidOperationException(
+                    "Cannot permanently delete criteria. Criteria has evaluation scores. " +
+                    "Consider using deactivation instead.");
             }
 
             var result = await _criteriaRepository.DeleteAsync(id);
 
             if (result)
             {
-                _logger.LogInformation("Criteria deleted: ID {CriteriaId} by User {UserId}", 
+                _logger.LogWarning("Criteria permanently deleted: ID {CriteriaId} by Admin {UserId}", 
                     id, GetUserId(user));
             }
 

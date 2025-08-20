@@ -15,5 +15,8 @@ namespace PerformanceEvaluation.Application.Services.Interfaces
         Task<TeamAssignmentDto> AssignEmployeeToTeamAsync(AssignEmployeeRequest request, ClaimsPrincipal user);
         Task<bool> RemoveUserFromTeamAsync(int teamId, int userId, ClaimsPrincipal user);
         Task<IEnumerable<TeamAssignmentDto>> GetTeamAssignmentsAsync(int teamId, ClaimsPrincipal user);
+        Task<bool> CascadeDeactivateTeamAsync(int id, ClaimsPrincipal user);
+        Task<bool> ReactivateTeamAsync(int id, ClaimsPrincipal user);
+        Task<bool> DeactivateTeamAsync(int id, ClaimsPrincipal user);
     }
 }

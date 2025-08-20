@@ -128,7 +128,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             {
                 if (IsAdmin(user))
                 {
-                    return await GetAllAsync();
+                    return await GetAllUsersAsync();
                 }
                 if (IsEvaluator(user))
                 {
@@ -262,7 +262,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             try
             {
                 var query = _dbSet
-                    .Include(u => u.RoleAssignments)
+                    .Include(u => u.RoleAssignments.Where(ra => ra.IsActive))
                         .ThenInclude(ra => ra.Role)
                     .Include(u => u.Department)
                     .Where(u => u.DepartmentID == departmentId && u.IsActive);
@@ -372,10 +372,10 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             try
             {
                 var RequestingUserId = GetUserId(requestingUser);
-                
+
                 if (!IsAdmin(requestingUser))
                 {
-                    _logger.LogWarning("User {requestingUserId} attempted to deactivate user {userId} without permission", 
+                    _logger.LogWarning("User {requestingUserId} attempted to deactivate user {userId} without permission",
                         RequestingUserId, userId);
                     throw new UnauthorizedAccessException("Only administrators can deactivate users");
                 }
@@ -409,7 +409,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             try
             {
                 var RequestingUserId = GetUserId(requestingUser);
-                
+
                 if (!IsAdmin(requestingUser))
                 {
                     throw new UnauthorizedAccessException("Only administrators can reactivate users");
@@ -444,7 +444,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             try
             {
                 var RequestingUserId = GetUserId(requestingUser);
-                
+
                 if (!IsAdmin(requestingUser))
                 {
                     throw new UnauthorizedAccessException("Only administrators can cascade deactivate users");
@@ -465,7 +465,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                 }
 
                 using var transaction = await _context.Database.BeginTransactionAsync();
-                
+
                 try
                 {
                     var deactivationTime = DateTime.UtcNow;
@@ -489,11 +489,11 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                     foreach (var evaluation in targetUser.EvaluatorEvaluations.Where(e => e.IsActive))
                     {
                         evaluation.IsActive = false;
-                        
+
                         foreach (var score in evaluation.EvaluationScores.Where(es => es.IsActive))
                         {
                             score.IsActive = false;
-                            
+
                             foreach (var comment in score.Comments.Where(c => c.IsActive))
                             {
                                 comment.IsActive = false;
@@ -509,7 +509,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                     await _context.SaveChangesAsync();
                     await transaction.CommitAsync();
 
-                    _logger.LogInformation("User and related data cascade deactivated: ID {userId} by Admin {adminId}", 
+                    _logger.LogInformation("User and related data cascade deactivated: ID {userId} by Admin {adminId}",
                         userId, RequestingUserId);
                     return true;
                 }
@@ -528,6 +528,23 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             {
                 _logger.LogError(ex, "Error cascade deactivating user {userId}", userId);
                 throw;
+            }
+        }
+        
+        public async Task<User?> GetByIdWithRolesAsync(int userId)
+        {
+            try
+            {
+                return await _dbSet
+                    .Include(u => u.RoleAssignments.Where(ra => ra.IsActive)) // Only active role assignments
+                        .ThenInclude(ra => ra.Role)
+                    .Include(u => u.Department)
+                    .FirstOrDefaultAsync(u => u.ID == userId && u.IsActive);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting user {userId} with roles", userId);
+                return null;
             }
         }
     }

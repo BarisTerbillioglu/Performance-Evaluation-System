@@ -123,11 +123,95 @@ namespace PerformanceEvaluation.API.Controllers
         }
 
         /// <summary>
-        /// Delete team (Admin only)
+        /// Deactivate team (soft delete)
         /// </summary>
-        [HttpDelete("{id}")]
+        [HttpPatch("{id}/deactivate")]
         [Authorize(Policy = "AdminOnly")]
-        public async Task<IActionResult> DeleteTeam(int id)
+        public async Task<IActionResult> DeactivateTeam(int id)
+        {
+            try
+            {
+                var result = await _teamService.DeactivateTeamAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "Team not found or already inactive" });
+                }
+
+                return Ok(new { message = "Team deactivated successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deactivating team {TeamId}", id);
+                return StatusCode(500, new { message = "Error deactivating team" });
+            }
+        }
+
+        /// <summary>
+        /// Reactivate team
+        /// </summary>
+        [HttpPatch("{id}/reactivate")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> ReactivateTeam(int id)
+        {
+            try
+            {
+                var result = await _teamService.ReactivateTeamAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "Team not found or already active" });
+                }
+
+                return Ok(new { message = "Team reactivated successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating team {TeamId}", id);
+                return StatusCode(500, new { message = "Error reactivating team" });
+            }
+        }
+
+        /// <summary>
+        /// Cascade deactivate team and all assignments
+        /// </summary>
+        [HttpPatch("{id}/cascade-deactivate")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> CascadeDeactivateTeam(int id)
+        {
+            try
+            {
+                var result = await _teamService.CascadeDeactivateTeamAsync(id, User);
+                if (!result)
+                {
+                    return NotFound(new { message = "Team not found" });
+                }
+
+                return Ok(new { message = "Team and assignments deactivated successfully" });
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Forbid(ex.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error cascade deactivating team {TeamId}", id);
+                return StatusCode(500, new { message = "Error cascade deactivating team" });
+            }
+        }
+
+        /// <summary>
+        /// Permanently delete team (Admin only - use with caution)
+        /// </summary>
+        [HttpDelete("{id}/permanent")]
+        [Authorize(Policy = "AdminOnly")]
+        public async Task<IActionResult> PermanentlyDeleteTeam(int id)
         {
             try
             {
@@ -137,20 +221,20 @@ namespace PerformanceEvaluation.API.Controllers
                     return NotFound(new { message = "Team not found" });
                 }
 
-                return NoContent();
-            }
-            catch (InvalidOperationException ex)
-            {
-                return BadRequest(new { message = ex.Message });
+                return Ok(new { message = "Team permanently deleted" });
             }
             catch (UnauthorizedAccessException ex)
             {
                 return Forbid(ex.Message);
             }
+            catch (InvalidOperationException ex)
+            {
+                return BadRequest(new { message = ex.Message });
+            }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error deleting team {TeamId}", id);
-                return StatusCode(500, new { message = "Error deleting team" });
+                _logger.LogError(ex, "Error permanently deleting team {TeamId}", id);
+                return StatusCode(500, new { message = "Error permanently deleting team" });
             }
         }
 

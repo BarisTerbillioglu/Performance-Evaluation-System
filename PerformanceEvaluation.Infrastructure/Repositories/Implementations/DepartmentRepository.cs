@@ -9,7 +9,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
 {
     public class DepartmentRepository : BaseRepository<Department>, IDepartmentRepository
     {
-        public DepartmentRepository(ApplicationDbContext context, ILogger<DepartmentRepository> logger) 
+        public DepartmentRepository(ApplicationDbContext context, ILogger<DepartmentRepository> logger)
             : base(context, logger) { }
 
 #pragma warning disable CS1998 // Async method lacks 'await' operators and will run synchronously
@@ -35,6 +35,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
         {
             return await _dbSet
                 .Include(d => d.Users)
+                .Where(d => d.IsActive)
                 .ToListAsync();
         }
 
@@ -51,10 +52,11 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
 
         public async Task<IEnumerable<User>> GetDepartmentUsersAsync(int departmentId, ClaimsPrincipal user)
         {
-            if (!await CanAccessAsync(departmentId, user))
+            if (await CanAccessAsync(departmentId, user))
             {
                 return await _context.Users
-                    .Include(u => u.Department)
+                    .Include(u => u.RoleAssignments.Where(ra => ra.IsActive))
+                        .ThenInclude(ra => ra.Role)
                     .Where(u => u.DepartmentID == departmentId)
                     .Distinct()
                     .ToListAsync();
@@ -70,6 +72,51 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                 .FirstOrDefaultAsync(u => u.ID == userId);
 
             return user?.Department;
+        }
+        public async Task<bool> DeactivateAsync(int departmentId)
+        {
+            try
+            {
+                var department = await _dbSet.FirstOrDefaultAsync(d => d.ID == departmentId && d.IsActive);
+                if (department == null)
+                {
+                    return false;
+                }
+
+                department.IsActive = false;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Department deactivated: ID {departmentId}", departmentId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deactivating department {departmentId}", departmentId);
+                throw;
+            }
+        }
+
+        public async Task<bool> ReactivateAsync(int departmentId)
+        {
+            try
+            {
+                var department = await _dbSet.FirstOrDefaultAsync(d => d.ID == departmentId && !d.IsActive);
+                if (department == null)
+                {
+                    return false;
+                }
+
+                department.IsActive = true;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Department reactivated: ID {departmentId}", departmentId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating department {departmentId}", departmentId);
+                throw;
+            }
         }
     }
 }

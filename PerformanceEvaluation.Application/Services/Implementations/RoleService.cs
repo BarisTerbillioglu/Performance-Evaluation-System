@@ -91,31 +91,128 @@ namespace PerformanceEvaluation.Application.Services.Implementations
             return MapToDto(updatedRole);
         }
 
+        public async Task<bool> DeactivateRoleAsync(int id, ClaimsPrincipal user)
+        {
+            if (!user.IsInRole("Admin"))
+            {
+                throw new UnauthorizedAccessException("Only administrators can deactivate roles");
+            }
+
+            var role = await _roleRepository.GetByIdAsync(id);
+            if (role == null)
+            {
+                return false;
+            }
+
+            // Prevent deactivation of system roles (ID <= 3)
+            if (role.ID <= 3)
+            {
+                throw new InvalidOperationException("Cannot deactivate system roles (Admin, Evaluator, Employee)");
+            }
+
+            var result = await _roleRepository.DeactivateAsync(id);
+
+            if (result)
+            {
+                _logger.LogInformation("Role deactivated: ID {RoleId} by Admin {UserId}", 
+                    id, GetUserId(user));
+            }
+
+            return result;
+        }
+
+        public async Task<bool> ReactivateRoleAsync(int id, ClaimsPrincipal user)
+        {
+            if (!user.IsInRole("Admin"))
+            {
+                throw new UnauthorizedAccessException("Only administrators can reactivate roles");
+            }
+
+            var result = await _roleRepository.ReactivateAsync(id);
+
+            if (result)
+            {
+                _logger.LogInformation("Role reactivated: ID {RoleId} by Admin {UserId}", 
+                    id, GetUserId(user));
+            }
+
+            return result;
+        }
+
+        public async Task<bool> CascadeDeactivateRoleAsync(int id, ClaimsPrincipal user)
+        {
+            if (!user.IsInRole("Admin"))
+            {
+                throw new UnauthorizedAccessException("Only administrators can cascade deactivate roles");
+            }
+
+            var role = await _roleRepository.GetByIdAsync(id);
+            if (role == null)
+            {
+                return false;
+            }
+
+            // Prevent deactivation of system roles
+            if (role.ID <= 3)
+            {
+                throw new InvalidOperationException("Cannot deactivate system roles (Admin, Evaluator, Employee)");
+            }
+
+            // Check for active role assignments
+            var assignments = await _roleRepository.GetRoleAssignmentsAsync(id);
+            var activeAssignments = assignments.Where(ra => ra.IsActive).ToList();
+            
+            if (activeAssignments.Any())
+            {
+                throw new InvalidOperationException(
+                    $"Cannot deactivate role. Role has {activeAssignments.Count} active assignment(s). " +
+                    "Please remove role assignments first.");
+            }
+
+            var result = await _roleRepository.DeactivateAsync(id);
+
+            if (result)
+            {
+                _logger.LogInformation("Role cascade deactivated: ID {RoleId} by Admin {UserId}", 
+                    id, GetUserId(user));
+            }
+
+            return result;
+        }
+
         public async Task<bool> DeleteRoleAsync(int id, ClaimsPrincipal user)
         {
             if (!user.IsInRole("Admin"))
             {
-                throw new UnauthorizedAccessException("Only administrators can delete roles");
+                throw new UnauthorizedAccessException("Only administrators can permanently delete roles");
             }
 
-            // Prevent deletion of system roles (IDs 1-3)
-            if (id <= 3)
+            var role = await _roleRepository.GetByIdAsync(id);
+            if (role == null)
             {
-                throw new InvalidOperationException("System roles cannot be deleted");
+                return false;
             }
 
-            // Check if role is assigned to any users
-            var usersWithRole = await _userRepository.GetUsersByRoleAsync(id, user);
-            if (usersWithRole.Any())
+            // Prevent deletion of system roles
+            if (role.ID <= 3)
             {
-                throw new InvalidOperationException("Cannot delete role that is assigned to users");
+                throw new InvalidOperationException("Cannot delete system roles (Admin, Evaluator, Employee)");
+            }
+
+            // Check for ANY role assignments (active or inactive)
+            var assignments = await _roleRepository.GetRoleAssignmentsAsync(id);
+            if (assignments.Any())
+            {
+                throw new InvalidOperationException(
+                    $"Cannot permanently delete role. Role has {assignments.Count()} assignment(s). " +
+                    "Consider using deactivation instead.");
             }
 
             var result = await _roleRepository.DeleteAsync(id);
 
             if (result)
             {
-                _logger.LogInformation("Role deleted: ID {RoleId} by User {UserId}", 
+                _logger.LogWarning("Role permanently deleted: ID {RoleId} by Admin {UserId}", 
                     id, GetUserId(user));
             }
 
@@ -205,7 +302,6 @@ namespace PerformanceEvaluation.Application.Services.Implementations
             };
 
             var createdAssignment = await _roleRepository.AddRoleAssignmentAsync(roleAssignment);
-            targetUser.RoleAssignments.Add(createdAssignment);
             targetUser = await _userRepository.UpdateAsync(targetUser);
 
             _logger.LogInformation("Role assigned: UserId {UserId}, RoleId {RoleId} by Admin {AdminId}", 

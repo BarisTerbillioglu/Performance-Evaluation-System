@@ -1,4 +1,5 @@
 using System.Security.Claims;
+using Microsoft.EntityFrameworkCore.Storage;
 using PerformanceEvaluation.Core.Entities;
 using PerformanceEvaluation.Core.Interfaces;
 
@@ -11,5 +12,9 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Interfaces
         Task<CriteriaCategory?> GetCategoryWithCriteriaAsync(int categoryId);
         Task<bool> ValidateWeightsAsync();
         Task<decimal> GetTotalWeightAsync();
+        Task<bool> DeactivateAsync(int categoryId);
+        Task<bool> ReactivateAsync(int categoryId);
+        Task<IEnumerable<Criteria>> GetCategoryCriteriaAsync(int categoryId);
+        Task<IDbContextTransaction> BeginTransactionAsync();
     }
 }

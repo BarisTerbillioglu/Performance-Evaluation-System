@@ -30,7 +30,6 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                 .Include(c => c.CriteriaCategory)
                 .Include(c => c.RoleCriteriaDescriptions)
                     .ThenInclude(rcd => rcd.Role)
-                    .ThenInclude(rcd => rcd.Description)
                 .Where(c => c.IsActive && c.CriteriaCategory.IsActive)
                 .OrderBy(c => c.CriteriaCategory.Name)
                     .ThenBy(c => c.Name)
@@ -52,7 +51,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                 .Include(c => c.CriteriaCategory)
                 .Include(c => c.RoleCriteriaDescriptions)
                     .ThenInclude(rcd => rcd.Role)
-                    .ThenInclude(rcd => rcd.Description)
+                .Where(c => c.IsActive)                
                 .OrderBy(c => c.CriteriaCategory.Name)
                     .ThenBy(c => c.Name)
                 .ToListAsync();
@@ -115,15 +114,14 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
                 .Include(c => c.CriteriaCategory)
                 .Include(c => c.RoleCriteriaDescriptions.Where(rcd => rcd.RoleID == roleId))
                     .ThenInclude(rcd => rcd.Role)
-                    .ThenInclude(rcd => rcd.Description)
                 .FirstOrDefaultAsync(c => c.ID == criteriaId && c.IsActive);
         }
-        
+
         public async Task<RoleCriteriaDescription> AddRoleDescriptionAsync(RoleCriteriaDescription roleDescription)
         {
             // Check if description already exists for this criteria-role combination
             var existing = await _context.RoleCriteriaDescriptions
-                .FirstOrDefaultAsync(rcd => rcd.CriteriaID == roleDescription.CriteriaID && 
+                .FirstOrDefaultAsync(rcd => rcd.CriteriaID == roleDescription.CriteriaID &&
                                         rcd.RoleID == roleDescription.RoleID);
 
             if (existing != null)
@@ -140,7 +138,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
         public async Task<RoleCriteriaDescription?> UpdateRoleDescriptionAsync(int id, string description, string? example)
         {
             var roleDescription = await _context.RoleCriteriaDescriptions.FindAsync(id);
-            
+
             if (roleDescription == null)
             {
                 return null;
@@ -156,7 +154,7 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
         public async Task<bool> DeleteRoleDescriptionAsync(int id)
         {
             var roleDescription = await _context.RoleCriteriaDescriptions.FindAsync(id);
-            
+
             if (roleDescription == null)
             {
                 return false;
@@ -165,6 +163,64 @@ namespace PerformanceEvaluation.Infrastructure.Repositories.Implementation
             _context.RoleCriteriaDescriptions.Remove(roleDescription);
             await _context.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<bool> DeactivateAsync(int criteriaId)
+        {
+            try
+            {
+                var criteria = await _dbSet.FirstOrDefaultAsync(c => c.ID == criteriaId && c.IsActive);
+                if (criteria == null)
+                {
+                    return false;
+                }
+
+                criteria.IsActive = false;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Criteria deactivated: ID {criteriaId}", criteriaId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error deactivating criteria {criteriaId}", criteriaId);
+                throw;
+            }
+        }
+
+        public async Task<bool> ReactivateAsync(int criteriaId)
+        {
+            try
+            {
+                var criteria = await _dbSet.FirstOrDefaultAsync(c => c.ID == criteriaId && !c.IsActive);
+                if (criteria == null)
+                {
+                    return false;
+                }
+
+                criteria.IsActive = true;
+                await _context.SaveChangesAsync();
+
+                _logger.LogInformation("Criteria reactivated: ID {criteriaId}", criteriaId);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error reactivating criteria {criteriaId}", criteriaId);
+                throw;
+            }
+        }
+
+        public async Task<bool> HasActiveEvaluationScoresAsync(int criteriaId)
+        {
+            return await _context.EvaluationScores
+                .AnyAsync(es => es.CriteriaID == criteriaId && es.IsActive);
+        }
+
+        public async Task<bool> HasEvaluationScoresAsync(int criteriaId)
+        {
+            return await _context.EvaluationScores
+                .AnyAsync(es => es.CriteriaID == criteriaId);
         }
     }
 }

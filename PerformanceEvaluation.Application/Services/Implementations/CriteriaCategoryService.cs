@@ -94,25 +94,106 @@ namespace PerformanceEvaluation.Application.Services.Implementations
             return MapToDto(updatedCategory);
         }
 
-        public async Task<bool> DeleteCategoryAsync(int id, ClaimsPrincipal user)
+        public async Task<bool> DeactivateCriteriaCategoryAsync(int id, ClaimsPrincipal user)
         {
             if (!user.IsInRole("Admin"))
             {
-                throw new UnauthorizedAccessException("Only administrators can delete criteria categories");
+                throw new UnauthorizedAccessException("Only administrators can deactivate criteria categories");
             }
 
-            // Check if category has criteria
-            var criteria = await _criteriaRepository.GetCriteriaByCategoryAsync(id);
+            var result = await _categoryRepository.DeactivateAsync(id);
+
+            if (result)
+            {
+                _logger.LogInformation("Criteria category deactivated: ID {CategoryId} by Admin {UserId}", 
+                    id, GetUserId(user));
+            }
+
+            return result;
+        }
+
+        public async Task<bool> ReactivateCriteriaCategoryAsync(int id, ClaimsPrincipal user)
+        {
+            if (!user.IsInRole("Admin"))
+            {
+                throw new UnauthorizedAccessException("Only administrators can reactivate criteria categories");
+            }
+
+            var result = await _categoryRepository.ReactivateAsync(id);
+
+            if (result)
+            {
+                _logger.LogInformation("Criteria category reactivated: ID {CategoryId} by Admin {UserId}", 
+                    id, GetUserId(user));
+            }
+
+            return result;
+        }
+
+        public async Task<bool> CascadeDeactivateCriteriaCategoryAsync(int id, ClaimsPrincipal user)
+        {
+            if (!user.IsInRole("Admin"))
+            {
+                throw new UnauthorizedAccessException("Only administrators can cascade deactivate criteria categories");
+            }
+
+            var category = await _categoryRepository.GetByIdAsync(id);
+            if (category == null)
+            {
+                return false;
+            }
+
+            using var transaction = await _categoryRepository.BeginTransactionAsync();
+            
+            try
+            {
+                // First, deactivate all criteria in this category
+                var criteria = await _categoryRepository.GetCategoryCriteriaAsync(id);
+                foreach (var criterion in criteria.Where(c => c.IsActive))
+                {
+                    await _criteriaRepository.DeactivateAsync(criterion.ID);
+                }
+
+                // Then deactivate the category
+                await _categoryRepository.DeactivateAsync(id);
+
+                await transaction.CommitAsync();
+
+                _logger.LogInformation("Criteria category and criteria cascade deactivated: ID {CategoryId} by Admin {UserId}", 
+                    id, GetUserId(user));
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                await transaction.RollbackAsync();
+                _logger.LogError(ex, "Error during cascade deactivation for criteria category {CategoryId}", id);
+                throw;
+            }
+        }
+
+        // Update existing DeleteCriteriaCategoryAsync for permanent deletion
+        public async Task<bool> DeleteCriteriaCategoryAsync(int id, ClaimsPrincipal user)
+        {
+            if (!user.IsInRole("Admin"))
+            {
+                throw new UnauthorizedAccessException("Only administrators can permanently delete criteria categories");
+            }
+
+            // Check for ANY criteria (active or inactive)
+            var criteria = await _categoryRepository.GetCategoryCriteriaAsync(id);
             if (criteria.Any())
             {
-                throw new InvalidOperationException("Cannot delete category with existing criteria");
+                throw new InvalidOperationException(
+                    $"Cannot permanently delete criteria category. Category has {criteria.Count()} criteria. " +
+                    "Consider using cascade deactivation instead.");
             }
 
             var result = await _categoryRepository.DeleteAsync(id);
 
             if (result)
             {
-                _logger.LogInformation("Criteria category deleted: ID {CategoryId} by User {UserId}", 
+                _logger.LogWarning("Criteria category permanently deleted: ID {CategoryId} by Admin {UserId}", 
                     id, GetUserId(user));
             }
 
