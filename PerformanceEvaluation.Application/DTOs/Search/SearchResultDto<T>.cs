@@ -9,7 +9,7 @@ namespace PerformanceEvaluation.Application.DTOs.Search
         public int TotalPages => (int)Math.Ceiling((double)TotalCount / PageSize);
         public bool HasNextPage => PageNumber < TotalPages;
         public bool HasPreviousPage => PageNumber > 1;
-        public Dictionary<string, int> Facets { get; set; } = new();
-        public List<string> AppliedFilters { get; set; } = new();
+        public double SearchDuration { get; set; }
+        public DateTime Timestamp { get; set; }
     }
 }

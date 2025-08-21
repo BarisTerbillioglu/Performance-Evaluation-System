@@ -1,4 +1,4 @@
-using PerformanceEvaluation.Infrastructure.Services.Interfaces;
+using PerformanceEvaluation.Application.Services.Interfaces;
 
 namespace PerformanceEvaluation.API.BackgroundServices
 {

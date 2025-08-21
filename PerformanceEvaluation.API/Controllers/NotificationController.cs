@@ -1,7 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using PerformanceEvaluation.Application.DTOs.Notification;
-using PerformanceEvaluation.Infrastructure.Services.Interfaces;
+using PerformanceEvaluation.Application.Services.Interfaces;
 using System.Security.Claims;
 
 namespace PerformanceEvaluation.API.Controllers

@@ -1,8 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using PerformanceEvaluation.Core.Enums;
 using PerformanceEvaluation.Infrastructure.Data;
-using PerformanceEvaluation.Infrastructure.Services.Interfaces;
 using PerformanceEvaluation.Application.DTOs.Notification;
+using PerformanceEvaluation.Application.Services.Interfaces;
 
 namespace PerformanceEvaluation.API.BackgroundServices
 {

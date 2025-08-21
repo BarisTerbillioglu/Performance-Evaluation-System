@@ -29,6 +29,8 @@ using PerformanceEvaluation.API.Middleware;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Server.Kestrel.Core;
 using System.Text.Json;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -179,9 +181,31 @@ builder.Services.AddCors(options =>
 
 // Health Checks
 builder.Services.AddHealthChecks()
-    .AddCheck<DatabaseHealthCheck>("database")
-    .AddDbContextCheck<ApplicationDbContext>("ef_context");
-
+    .AddCheck<DatabaseHealthCheck>(
+        name: "database",
+        failureStatus: HealthStatus.Unhealthy,
+        tags: new[] { "database", "infrastructure", "readiness" })
+    .AddCheck<ServicesHealthCheck>(
+        name: "services",
+        failureStatus: HealthStatus.Degraded,
+        tags: new[] { "services", "application", "readiness" })
+    .AddCheck<ExternalDependenciesHealthCheck>(
+        name: "external-dependencies",
+        failureStatus: HealthStatus.Degraded,
+        tags: new[] { "external", "dependencies", "infrastructure" })
+    .AddDbContextCheck<ApplicationDbContext>(
+        name: "database-ef",
+        failureStatus: HealthStatus.Unhealthy,
+        tags: new[] { "database", "ef-core", "readiness" })
+    .AddCheck<MemoryHealthCheck>(
+        name: "memory",
+        failureStatus: HealthStatus.Degraded,
+        tags: new[] { "memory", "system" })
+    .AddCheck<DiskStorageHealthCheck>(
+        name: "disk-storage",
+        failureStatus: HealthStatus.Degraded,
+        tags: new[] { "disk", "storage", "system" });
+        
 // Swagger/OpenAPI
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -244,6 +268,7 @@ builder.Services.AddScoped<IEvaluationService, EvaluationService>();
 builder.Services.AddScoped<ITeamService, TeamService>();
 builder.Services.AddScoped<IFileService, FileService>();
 builder.Services.AddScoped<IBulkOperationService, BulkOperationService>();
+builder.Services.AddScoped<ISearchService, SearchService>();
 
 
 // Background Services - Moved to API project to avoid circular dependency
@@ -265,9 +290,40 @@ builder.Services.Configure<KestrelServerOptions>(options =>
 builder.Services.Configure<FormOptions>(options =>
 {
     options.ValueLengthLimit = int.MaxValue;
-    options.MultipartBodyLengthLimit = 52428800; 
+    options.MultipartBodyLengthLimit = 52428800;
     options.MultipartHeadersLengthLimit = int.MaxValue;
 });
+
+builder.Services.Configure<DiskStorageOptions>(options =>
+{
+    options.AddDrive("C:", minimumFreeMegabytes: 1000); 
+    // Add more drives as needed for your system
+});
+
+builder.Services.Configure<HealthCheckOptions>(options =>
+{
+    options.AllowCachingResponses = false;
+    options.ResultStatusCodes = new Dictionary<HealthStatus, int>
+    {
+        { HealthStatus.Healthy, 200 },
+        { HealthStatus.Degraded, 200 },
+        { HealthStatus.Unhealthy, 503 }
+    };
+});
+
+builder.Services.AddRateLimiter(options =>
+{
+    options.GlobalLimiter = PartitionedRateLimiter.Create<HttpContext, string>(context =>
+        RateLimitPartition.GetFixedWindowLimiter(
+            partitionKey: context.User.Identity?.Name ?? context.Request.Headers.Host.ToString(),
+            factory: partition => new FixedWindowRateLimiterOptions
+            {
+                AutoReplenishment = true,
+                PermitLimit = 100,
+                Window = TimeSpan.FromMinutes(1)
+            }));
+});
+
 
 
 var app = builder.Build();
@@ -301,9 +357,69 @@ app.UseRateLimiter();
 app.UseAuthentication();
 app.UseAuthorization();
 
+app.UseRateLimiter();
+
 // Health checks endpoint
-app.MapHealthChecks("/health");
-app.MapControllers().RequireRateLimiting("GeneralLimiter");
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var response = new
+        {
+            status = report.Status.ToString(),
+            duration = report.TotalDuration.TotalMilliseconds,
+            timestamp = DateTime.UtcNow,
+            checks = report.Entries.Select(entry => new
+            {
+                name = entry.Key,
+                status = entry.Value.Status.ToString(),
+                duration = entry.Value.Duration.TotalMilliseconds,
+                description = entry.Value.Description
+            })
+        };
+        
+        await context.Response.WriteAsync(JsonSerializer.Serialize(response, new JsonSerializerOptions 
+        { 
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
+        }));
+    }
+});
+
+// Liveness probe - simple endpoint for container orchestration
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false, // Don't run any checks, just return if the app is running
+    ResponseWriter = async (context, report) =>
+    {
+        await context.Response.WriteAsync(JsonSerializer.Serialize(new 
+        { 
+            status = "alive", 
+            timestamp = DateTime.UtcNow 
+        }));
+    }
+});
+
+// Readiness probe - checks if the app is ready to receive traffic
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("readiness"),
+    ResponseWriter = async (context, report) =>
+    {
+        context.Response.ContentType = "application/json";
+        var response = new
+        {
+            status = report.Status.ToString(),
+            ready = report.Status == HealthStatus.Healthy,
+            timestamp = DateTime.UtcNow
+        };
+        
+        await context.Response.WriteAsync(JsonSerializer.Serialize(response, new JsonSerializerOptions 
+        { 
+            PropertyNamingPolicy = JsonNamingPolicy.CamelCase 
+        }));
+    }
+});
 
 // Ensure database is created and migrated
 if (app.Environment.IsDevelopment())

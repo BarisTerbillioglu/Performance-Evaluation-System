@@ -2,7 +2,7 @@
 using PerformanceEvaluation.Application.DTOs.Notification;
 using System.Security.Claims;
 
-namespace PerformanceEvaluation.Infrastructure.Services.Interfaces
+namespace PerformanceEvaluation.Application.Services.Interfaces
 {
     public interface INotificationService
     {

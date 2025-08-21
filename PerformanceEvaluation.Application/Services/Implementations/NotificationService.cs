@@ -1,18 +1,17 @@
-// PerformanceEvaluation.Infrastructure/Services/Implementations/NotificationService.cs
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Logging;
 using PerformanceEvaluation.Application.DTOs.Notification;
+using PerformanceEvaluation.Application.Services.Interfaces;
 using PerformanceEvaluation.Core.Entities;
 using PerformanceEvaluation.Core.Enums;
 using PerformanceEvaluation.Infrastructure.Data;
-using PerformanceEvaluation.Infrastructure.Services.Interfaces;
 using System.Net;
 using System.Net.Mail;
 using System.Text;
 using System.Text.Json;
 
-namespace PerformanceEvaluation.Infrastructure.Services.Implementations
+namespace PerformanceEvaluation.Application.Services.Implementations
 {
     public class NotificationService : INotificationService
     {
