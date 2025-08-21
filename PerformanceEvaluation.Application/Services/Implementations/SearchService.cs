@@ -180,7 +180,7 @@ namespace PerformanceEvaluation.Application.Services.Implementations
                 query = query.Where(e => request.DepartmentIds.Contains(e.Employee.DepartmentID));
 
             if (request.Statuses.Any())
-                query = query.Where(e => request.Statuses.Contains(e.Status));
+                query = query.Where(e => request.Statuses.Select(s => s.ToString()).Contains(e.Status));
 
             if (request.StartDateFrom.HasValue)
                 query = query.Where(e => e.StartDate >= request.StartDateFrom.Value);
@@ -233,7 +233,7 @@ namespace PerformanceEvaluation.Application.Services.Implementations
                 Period = e.Period,
                 StartDate = e.StartDate,
                 EndDate = e.EndDate,
-                Status = e.Status,
+                Status = Enum.TryParse<EvaluationStatus>(e.Status, ignoreCase: true, out var status) ? status : EvaluationStatus.Draft,
                 TotalScore = e.TotalScore,
                 HasComments = e.EvaluationScores.Any(es => es.Comments.Any()) || !string.IsNullOrEmpty(e.GeneralComments),
                 CreatedDate = e.CreatedDate
@@ -380,19 +380,27 @@ namespace PerformanceEvaluation.Application.Services.Implementations
             switch (entityType.ToLower())
             {
                 case "users":
-                    var userSuggestions = await _context.Users
+                    var rawUsers = await _context.Users
                         .Where(u => u.FirstName.ToLower().Contains(searchTerm) || 
-                                   u.LastName.ToLower().Contains(searchTerm) ||
-                                   u.Email.ToLower().Contains(searchTerm))
+                                    u.LastName.ToLower().Contains(searchTerm) ||
+                                    u.Email.ToLower().Contains(searchTerm))
                         .Take(10)
-                        .Select(u => new SearchSuggestionDto
+                        .Select(u => new
                         {
-                            Text = $"{u.FirstName} {u.LastName}",
-                            Type = "User",
-                            Count = 1,
-                            Metadata = new Dictionary<string, object> { ["Id"] = u.ID, ["Email"] = u.Email }
+                            u.ID,
+                            u.FirstName,
+                            u.LastName,
+                            u.Email
                         })
                         .ToListAsync();
+
+                    var userSuggestions = rawUsers.Select(u => new SearchSuggestionDto
+                    {
+                        Text = $"{u.FirstName} {u.LastName}",
+                        Type = "User",
+                        Count = 1,
+                        Metadata = new Dictionary<string, object> { ["Id"] = u.ID, ["Email"] = u.Email }
+                    }).ToList();
                     suggestions.AddRange(userSuggestions);
                     break;
 
@@ -412,19 +420,27 @@ namespace PerformanceEvaluation.Application.Services.Implementations
                     break;
 
                 case "criteria":
-                    var criteriaSuggestions = await _context.Criteria
+                    var rawCriteria = await _context.Criteria
                         .Where(c => c.Name.ToLower().Contains(searchTerm))
                         .Take(10)
-                        .Select(c => new SearchSuggestionDto
+                        .Select(c => new
                         {
-                            Text = c.Name,
-                            Type = "Criteria",
-                            Count = 1,
-                            Metadata = new Dictionary<string, object> { ["Id"] = c.ID, ["Category"] = c.CriteriaCategory.Name }
+                            c.ID,
+                            c.Name,
+                            CategoryName = c.CriteriaCategory.Name
                         })
                         .ToListAsync();
-                    suggestions.AddRange(criteriaSuggestions);
-                    break;
+
+                        var criteriaSuggestions = rawCriteria.Select(c => new SearchSuggestionDto
+                        {
+                        Text = c.Name,
+                        Type = "Criteria",
+                        Count = 1,
+                        Metadata = new Dictionary<string, object> { ["Id"] = c.ID, ["Category"] = c.CategoryName }
+                        }).ToList();
+
+                        suggestions.AddRange(criteriaSuggestions);
+                        break;
             }
 
             return suggestions;

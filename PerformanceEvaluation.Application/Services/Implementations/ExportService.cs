@@ -78,7 +78,7 @@ namespace PerformanceEvaluation.Application.Services.Implementations
                 query = query.Where(e => e.Employee.DepartmentID == request.DepartmentId.Value);
 
             if (request.Status.HasValue)
-                query = query.Where(e => e.Status == request.Status.Value);
+                query = query.Where(e => e.Status == request.Status.ToString());
 
             if (request.UserIds.Any())
                 query = query.Where(e => request.UserIds.Contains(e.EmployeeID));

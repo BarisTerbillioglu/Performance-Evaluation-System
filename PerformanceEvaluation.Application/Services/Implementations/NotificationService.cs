@@ -627,49 +627,75 @@ namespace PerformanceEvaluation.Infrastructure.Services.Implementations
 
         public async Task<List<NotificationDto>> GetUserNotificationsAsync(int userId, int pageNumber = 1, int pageSize = 20)
         {
-            var notifications = await _context.Notifications
+            var rawNotifications = await _context.Notifications
                 .Where(n => n.UserId == userId)
                 .OrderByDescending(n => n.CreatedDate)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(n => new NotificationDto
+                .Select(n => new
                 {
-                    Id = n.Id,
-                    Title = n.Title,
-                    Message = n.Message,
-                    Type = n.Type,
-                    IsRead = n.IsRead,
-                    CreatedDate = n.CreatedDate,
-                    ReadDate = n.ReadDate,
-                    ActionUrl = n.ActionUrl,
-                    Metadata = string.IsNullOrEmpty(n.Metadata) ? new Dictionary<string, object>() :
-                              JsonSerializer.Deserialize<Dictionary<string, object>>(n.Metadata) ?? new Dictionary<string, object>()
+                    n.Id,
+                    n.Title,
+                    n.Message,
+                    n.Type,
+                    n.IsRead,
+                    n.CreatedDate,
+                    n.ReadDate,
+                    n.ActionUrl,
+                    n.Metadata // Keep as string for now
                 })
                 .ToListAsync();
+
+            // Then, process the metadata in memory
+            var notifications = rawNotifications.Select(n => new NotificationDto
+            {
+                Id = n.Id,
+                Title = n.Title,
+                Message = n.Message,
+                Type = n.Type,
+                IsRead = n.IsRead,
+                CreatedDate = n.CreatedDate,
+                ReadDate = n.ReadDate,
+                ActionUrl = n.ActionUrl,
+                Metadata = ProcessMetadata(n.Metadata)
+            }).ToList();
 
             return notifications;
         }
 
         public async Task<List<NotificationDto>> GetUnreadNotificationsAsync(int userId)
         {
-            var notifications = await _context.Notifications
+            var rawNotifications = await _context.Notifications
                 .Where(n => n.UserId == userId && !n.IsRead)
                 .OrderByDescending(n => n.CreatedDate)
                 .Take(50)
-                .Select(n => new NotificationDto
+                .Select(n => new
                 {
-                    Id = n.Id,
-                    Title = n.Title,
-                    Message = n.Message,
-                    Type = n.Type,
-                    IsRead = n.IsRead,
-                    CreatedDate = n.CreatedDate,
-                    ReadDate = n.ReadDate,
-                    ActionUrl = n.ActionUrl,
-                    Metadata = string.IsNullOrEmpty(n.Metadata) ? new Dictionary<string, object>() :
-                              JsonSerializer.Deserialize<Dictionary<string, object>>(n.Metadata) ?? new Dictionary<string, object>()
+                    n.Id,
+                    n.Title,
+                    n.Message,
+                    n.Type,
+                    n.IsRead,
+                    n.CreatedDate,
+                    n.ReadDate,
+                    n.ActionUrl,
+                    n.Metadata // Keep as string for now
                 })
                 .ToListAsync();
+
+            // Then, process the metadata in memory
+            var notifications = rawNotifications.Select(n => new NotificationDto
+            {
+                Id = n.Id,
+                Title = n.Title,
+                Message = n.Message,
+                Type = n.Type,
+                IsRead = n.IsRead,
+                CreatedDate = n.CreatedDate,
+                ReadDate = n.ReadDate,
+                ActionUrl = n.ActionUrl,
+                Metadata = ProcessMetadata(n.Metadata)
+            }).ToList();
 
             return notifications;
         }
@@ -704,22 +730,39 @@ namespace PerformanceEvaluation.Infrastructure.Services.Implementations
 
         public async Task<NotificationDto?> GetNotificationByIdAsync(int notificationId, int userId)
         {
-            var notification = await _context.Notifications
+            var rawNotification = await _context.Notifications
                 .Where(n => n.Id == notificationId && n.UserId == userId)
-                .Select(n => new NotificationDto
+                .Select(n => new
                 {
-                    Id = n.Id,
-                    Title = n.Title,
-                    Message = n.Message,
-                    Type = n.Type,
-                    IsRead = n.IsRead,
-                    CreatedDate = n.CreatedDate,
-                    ReadDate = n.ReadDate,
-                    ActionUrl = n.ActionUrl,
-                    Metadata = string.IsNullOrEmpty(n.Metadata) ? new Dictionary<string, object>() :
-                              JsonSerializer.Deserialize<Dictionary<string, object>>(n.Metadata) ?? new Dictionary<string, object>()
+                    n.Id,
+                    n.Title,
+                    n.Message,
+                    n.Type,
+                    n.IsRead,
+                    n.CreatedDate,
+                    n.ReadDate,
+                    n.ActionUrl,
+                    n.Metadata // Keep as string for now
                 })
                 .FirstOrDefaultAsync();
+
+            // Return null if notification not found
+            if (rawNotification == null)
+                return null;
+
+            // Then, process the metadata in memory
+            var notification = new NotificationDto
+            {
+                Id = rawNotification.Id,
+                Title = rawNotification.Title,
+                Message = rawNotification.Message,
+                Type = rawNotification.Type,
+                IsRead = rawNotification.IsRead,
+                CreatedDate = rawNotification.CreatedDate,
+                ReadDate = rawNotification.ReadDate,
+                ActionUrl = rawNotification.ActionUrl,
+                Metadata = ProcessMetadata(rawNotification.Metadata)
+            };
 
             return notification;
         }
@@ -1096,6 +1139,23 @@ namespace PerformanceEvaluation.Infrastructure.Services.Implementations
             
             return emailEnabled && preferences.EmailNotifications && await CanSendNotificationToUserAsync(userId, notificationType);
         }
+
+        private Dictionary<string, object> ProcessMetadata(string? metadata)
+    {
+        if (string.IsNullOrEmpty(metadata))
+            return new Dictionary<string, object>();
+
+        try
+        {
+            return JsonSerializer.Deserialize<Dictionary<string, object>>(metadata) 
+                ?? new Dictionary<string, object>();
+        }
+        catch (JsonException ex)
+        {
+            _logger.LogWarning(ex, "Failed to deserialize notification metadata: {Metadata}", metadata);
+            return new Dictionary<string, object>();
+        }
+    }
 
         private string GetDefaultEmailTemplate(Dictionary<string, object> data)
         {

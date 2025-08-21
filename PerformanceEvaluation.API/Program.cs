@@ -243,6 +243,7 @@ builder.Services.AddScoped<ICriteriaCategoryService, CriteriaCategoryService>();
 builder.Services.AddScoped<IEvaluationService, EvaluationService>();
 builder.Services.AddScoped<ITeamService, TeamService>();
 builder.Services.AddScoped<IFileService, FileService>();
+builder.Services.AddScoped<IBulkOperationService, BulkOperationService>();
 
 
 // Background Services - Moved to API project to avoid circular dependency
