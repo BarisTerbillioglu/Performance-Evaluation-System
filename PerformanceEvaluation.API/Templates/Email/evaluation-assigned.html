@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <title>Performance Evaluation Assigned</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background-color: #007bff; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .content { padding: 30px; }
+        .content h2 { color: #333; margin-top: 0; }
+        .content p { color: #666; margin-bottom: 20px; }
+        .evaluation-details { background-color: #f8f9fa; padding: 20px; border-radius: 4px; margin: 20px 0; }
+        .evaluation-details h3 { margin-top: 0; color: #007bff; }
+        .detail-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .detail-label { font-weight: bold; color: #333; }
+        .detail-value { color: #666; }
+        .button { display: inline-block; padding: 12px 24px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; }
+        .button:hover { background-color: #0056b3; }
+        .footer { background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e9ecef; }
+        .footer p { margin: 0; font-size: 12px; color: #666; }
+        .warning { background-color: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 4px; margin: 20px 0; }
+        .warning p { margin: 0; color: #856404; }
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>Performance Evaluation System</h1>
+        </div>
+        <div class='content'>
+            <h2>New Evaluation Assignment</h2>
+            <p>Hello {{EvaluatorName}},</p>
+            <p>You have been assigned to conduct a performance evaluation. Please review the details below and complete the evaluation by the due date.</p>
+            
+            <div class='evaluation-details'>
+                <h3>Evaluation Details</h3>
+                <div class='detail-row'>
+                    <span class='detail-label'>Employee:</span>
+                    <span class='detail-value'>{{EmployeeName}}</span>
+                </div>
+                <div class='detail-row'>
+                    <span class='detail-label'>Evaluation Period:</span>
+                    <span class='detail-value'>{{Period}}</span>
+                </div>
+                <div class='detail-row'>
+                    <span class='detail-label'>Due Date:</span>
+                    <span class='detail-value'>{{DueDate}}</span>
+                </div>
+            </div>
+
+            <div class='warning'>
+                <p><strong>Important:</strong> Please complete this evaluation by the due date to ensure timely performance reviews.</p>
+            </div>
+
+            <a href='{{EvaluationUrl}}' class='button'>Start Evaluation</a>
+
+            <p>If you have any questions about this evaluation, please contact your supervisor or HR department.</p>
+        </div>
+        <div class='footer'>
+            <p>This is an automated message from the Performance Evaluation System.</p>
+            <p>Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>

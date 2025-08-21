@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <title>Welcome to Performance Evaluation System</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background-color: #6f42c1; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .content { padding: 30px; }
+        .content h2 { color: #333; margin-top: 0; }
+        .content p { color: #666; margin-bottom: 20px; }
+        .welcome-box { background-color: #e7f3ff; padding: 20px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #007bff; }
+        .welcome-box h3 { margin-top: 0; color: #0056b3; }
+        .features { margin: 20px 0; }
+        .feature { display: flex; align-items: center; margin-bottom: 15px; }
+        .feature-icon { width: 24px; height: 24px; background-color: #28a745; border-radius: 50%; margin-right: 15px; text-align: center; line-height: 24px; color: white; font-weight: bold; }
+        .feature-text { color: #333; }
+        .user-info { background-color: #f8f9fa; padding: 20px; border-radius: 4px; margin: 20px 0; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .info-label { font-weight: bold; color: #333; }
+        .info-value { color: #666; }
+        .button { display: inline-block; padding: 12px 24px; background-color: #6f42c1; color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; }
+        .button:hover { background-color: #5a32a3; }
+        .footer { background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e9ecef; }
+        .footer p { margin: 0; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>🎉 Welcome to Performance Evaluation System!</h1>
+        </div>
+        <div class='content'>
+            <h2>Welcome Aboard!</h2>
+            <p>Hello {{UserName}},</p>
+            <p>We're excited to welcome you to our Performance Evaluation System. Your account has been successfully created and you're ready to get started!</p>
+            
+            <div class='welcome-box'>
+                <h3>Getting Started</h3>
+                <p>Our system helps streamline the performance evaluation process, making it easier for everyone to track progress and achieve goals.</p>
+            </div>
+
+            <div class='user-info'>
+                <h3>Your Account Information</h3>
+                <div class='info-row'>
+                    <span class='info-label'>Name:</span>
+                    <span class='info-value'>{{UserName}}</span>
+                </div>
+                <div class='info-row'>
+                    <span class='info-label'>Department:</span>
+                    <span class='info-value'>{{DepartmentName}}</span>
+                </div>
+            </div>
+            
+            <div class='features'>
+                <h3>What you can do:</h3>
+                <div class='feature'>
+                    <div class='feature-icon'>✓</div>
+                    <div class='feature-text'>View and complete performance evaluations</div>
+                </div>
+                <div class='feature'>
+                    <div class='feature-icon'>✓</div>
+                    <div class='feature-text'>Track your performance progress</div>
+                </div>
+                <div class='feature'>
+                    <div class='feature-icon'>✓</div>
+                    <div class='feature-text'>Receive notifications about important updates</div>
+                </div>
+                <div class='feature'>
+                    <div class='feature-icon'>✓</div>
+                    <div class='feature-text'>Access detailed performance reports</div>
+                </div>
+            </div>
+
+            <a href='{{LoginUrl}}' class='button'>Access Your Dashboard</a>
+
+            <p>If you have any questions or need assistance, please don't hesitate to contact our support team or your supervisor.</p>
+            <p>We look forward to supporting your professional growth and development!</p>
+        </div>
+        <div class='footer'>
+            <p>This is an automated welcome message from the Performance Evaluation System.</p>
+            <p>Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>

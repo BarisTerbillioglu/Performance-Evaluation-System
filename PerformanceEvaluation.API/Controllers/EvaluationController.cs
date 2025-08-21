@@ -8,6 +8,9 @@ using PerformanceEvaluation.Core.Enums;
 
 namespace PerformanceEvaluation.API.Controllers
 {
+    /// <summary>
+    /// 
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
@@ -17,6 +20,11 @@ namespace PerformanceEvaluation.API.Controllers
         private readonly IEvaluationService _evaluationService;
         private readonly ILogger<EvaluationController> _logger;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="evaluationService"></param>
+        /// <param name="logger"></param>
         public EvaluationController(
             IEvaluationService evaluationService,
             ILogger<EvaluationController> logger)

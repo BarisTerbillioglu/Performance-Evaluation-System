@@ -6,6 +6,9 @@ using PerformanceEvaluation.Core.Enums;
 
 namespace PerformanceEvaluation.API.Controllers
 {
+    /// <summary>
+    /// 
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
@@ -15,6 +18,11 @@ namespace PerformanceEvaluation.API.Controllers
         private readonly ICriteriaService _criteriaService;
         private readonly ILogger<CriteriaController> _logger;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="criteriaService"></param>
+        /// <param name="logger"></param>
         public CriteriaController(
             ICriteriaService criteriaService,
             ILogger<CriteriaController> logger)

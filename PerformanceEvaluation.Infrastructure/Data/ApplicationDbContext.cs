@@ -21,6 +21,8 @@ namespace PerformanceEvaluation.Infrastructure.Data
         public DbSet<RoleAssignment> RoleAssignments { get; set; }
 
         public DbSet<Comment> Comments { get; set; }
+        public DbSet<Notification> Notifications { get; set; }
+        public DbSet<Team> Teams { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -83,6 +85,35 @@ namespace PerformanceEvaluation.Infrastructure.Data
                     .OnDelete(DeleteBehavior.Restrict);
 
                 entity.HasIndex(e => new { e.UserID, e.RoleID }).IsUnique();
+            });
+
+            modelBuilder.Entity<Notification>(entity =>
+            {
+                entity.HasKey(e => e.Id);
+                entity.Property(e => e.Title).IsRequired().HasMaxLength(200);
+                entity.Property(e => e.Message).IsRequired().HasMaxLength(1000);
+                entity.Property(e => e.Type).IsRequired().HasMaxLength(50);
+                entity.Property(e => e.ActionUrl).HasMaxLength(500);
+                entity.Property(e => e.Metadata).HasMaxLength(2000);
+
+                entity.HasOne(e => e.User)
+                    .WithMany()
+                    .HasForeignKey(e => e.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                // Indexes for performance
+                entity.HasIndex(e => new { e.UserId, e.IsRead })
+                    .HasDatabaseName("IX_Notifications_UserId_IsRead");
+
+                entity.HasIndex(e => e.CreatedDate)
+                    .HasDatabaseName("IX_Notifications_CreatedDate");
+
+                entity.HasIndex(e => e.Type)
+                    .HasDatabaseName("IX_Notifications_Type");
+
+                // Default values
+                entity.Property(e => e.IsRead).HasDefaultValue(false);
+                entity.Property(e => e.CreatedDate).HasDefaultValueSql("GETUTCDATE()");
             });
 
             //Criteria config

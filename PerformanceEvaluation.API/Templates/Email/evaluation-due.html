@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <title>Evaluation Due Reminder</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background-color: #ffc107; color: #212529; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .content { padding: 30px; }
+        .content h2 { color: #333; margin-top: 0; }
+        .content p { color: #666; margin-bottom: 20px; }
+        .reminder-box { background-color: #fff3cd; padding: 20px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #ffc107; }
+        .reminder-box h3 { margin-top: 0; color: #856404; }
+        .countdown { text-align: center; font-size: 32px; font-weight: bold; color: #dc3545; margin: 20px 0; }
+        .evaluation-info { background-color: #f8f9fa; padding: 20px; border-radius: 4px; margin: 20px 0; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .info-label { font-weight: bold; color: #333; }
+        .info-value { color: #666; }
+        .button { display: inline-block; padding: 12px 24px; background-color: #dc3545; color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; }
+        .button:hover { background-color: #c82333; }
+        .footer { background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e9ecef; }
+        .footer p { margin: 0; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>⚠️ Evaluation Due Reminder</h1>
+        </div>
+        <div class='content'>
+            <h2>Evaluation Due Soon</h2>
+            <p>Hello {{EvaluatorName}},</p>
+            <p>This is a reminder that you have a pending performance evaluation that is due soon.</p>
+            
+            <div class='countdown'>
+                {{DaysRemaining}} Days Remaining
+            </div>
+
+            <div class='reminder-box'>
+                <h3>Action Required</h3>
+                <p>Please complete this evaluation before the due date to avoid delays in the performance review process.</p>
+            </div>
+            
+            <div class='evaluation-info'>
+                <h3>Evaluation Details</h3>
+                <div class='info-row'>
+                    <span class='info-label'>Employee:</span>
+                    <span class='info-value'>{{EmployeeName}}</span>
+                </div>
+                <div class='info-row'>
+                    <span class='info-label'>Period:</span>
+                    <span class='info-value'>{{Period}}</span>
+                </div>
+                <div class='info-row'>
+                    <span class='info-label'>Due Date:</span>
+                    <span class='info-value'>{{DueDate}}</span>
+                </div>
+            </div>
+
+            <a href='{{EvaluationUrl}}' class='button'>Complete Evaluation Now</a>
+
+            <p>If you need assistance or have questions about this evaluation, please contact your supervisor or HR department immediately.</p>
+        </div>
+        <div class='footer'>
+            <p>This is an automated reminder from the Performance Evaluation System.</p>
+            <p>Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <title>Account Deactivated</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background-color: #6c757d; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .content { padding: 30px; }
+        .content h2 { color: #333; margin-top: 0; }
+        .content p { color: #666; margin-bottom: 20px; }
+        .deactivation-notice { background-color: #f8f9fa; padding: 20px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #6c757d; }
+        .deactivation-notice h3 { margin-top: 0; color: #495057; }
+        .deactivation-info { background-color: #e9ecef; padding: 20px; border-radius: 4px; margin: 20px 0; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .info-label { font-weight: bold; color: #333; }
+        .info-value { color: #666; }
+        .contact-info { background-color: #d1ecf1; padding: 20px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #17a2b8; }
+        .contact-info h3 { margin-top: 0; color: #0c5460; }
+        .footer { background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e9ecef; }
+        .footer p { margin: 0; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>Account Deactivated</h1>
+        </div>
+        <div class='content'>
+            <h2>Account Status Update</h2>
+            <p>Hello {{UserName}},</p>
+            <p>We're writing to inform you that your Performance Evaluation System account has been deactivated.</p>
+            
+            <div class='deactivation-notice'>
+                <h3>Account Deactivation</h3>
+                <p>Your access to the Performance Evaluation System has been suspended.</p>
+            </div>
+            
+            <div class='deactivation-info'>
+                <h3>Deactivation Details</h3>
+                <div class='info-row'>
+                    <span class='info-label'>Reason:</span>
+                    <span class='info-value'>{{Reason}}</span>
+                </div>
+                <div class='info-row'>
+                    <span class='info-label'>Deactivation Date:</span>
+                    <span class='info-value'>{{DeactivationDate}}</span>
+                </div>
+            </div>
+
+            <div class='contact-info'>
+                <h3>Need Help?</h3>
+                <p>If you believe this deactivation was made in error or if you have questions about this action, please contact our support team immediately.</p>
+                <p><strong>Support Email:</strong> {{ContactEmail}}</p>
+            </div>
+
+            <p>Thank you for your understanding.</p>
+        </div>
+        <div class='footer'>
+            <p>This is an automated notification from the Performance Evaluation System.</p>
+            <p>Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>

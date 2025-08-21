@@ -5,6 +5,9 @@ using PerformanceEvaluation.Application.Services.Interfaces;
 
 namespace PerformanceEvaluation.API.Controllers
 {
+    /// <summary>
+    /// 
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
@@ -14,6 +17,11 @@ namespace PerformanceEvaluation.API.Controllers
         private readonly IDepartmentService _departmentService;
         private readonly ILogger<DepartmentController> _logger;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="departmentService"></param>
+        /// <param name="logger"></param>
         public DepartmentController(
             IDepartmentService departmentService,
             ILogger<DepartmentController> logger)

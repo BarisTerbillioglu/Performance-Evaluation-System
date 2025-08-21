@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset='utf-8'>
+    <title>Performance Evaluation Completed</title>
+    <style>
+        body { font-family: Arial, sans-serif; line-height: 1.6; margin: 0; padding: 20px; background-color: #f4f4f4; }
+        .container { max-width: 600px; margin: 0 auto; background-color: #ffffff; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .header { background-color: #28a745; color: white; padding: 30px; text-align: center; border-radius: 8px 8px 0 0; }
+        .header h1 { margin: 0; font-size: 24px; }
+        .content { padding: 30px; }
+        .content h2 { color: #333; margin-top: 0; }
+        .content p { color: #666; margin-bottom: 20px; }
+        .evaluation-summary { background-color: #d4edda; padding: 20px; border-radius: 4px; margin: 20px 0; border-left: 4px solid #28a745; }
+        .evaluation-summary h3 { margin-top: 0; color: #155724; }
+        .summary-row { display: flex; justify-content: space-between; margin-bottom: 10px; }
+        .summary-label { font-weight: bold; color: #155724; }
+        .summary-value { color: #155724; }
+        .score-highlight { font-size: 24px; font-weight: bold; text-align: center; color: #28a745; margin: 20px 0; }
+        .button { display: inline-block; padding: 12px 24px; background-color: #28a745; color: white; text-decoration: none; border-radius: 4px; margin: 20px 0; }
+        .button:hover { background-color: #1e7e34; }
+        .footer { background-color: #f8f9fa; padding: 20px; text-align: center; border-radius: 0 0 8px 8px; border-top: 1px solid #e9ecef; }
+        .footer p { margin: 0; font-size: 12px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class='container'>
+        <div class='header'>
+            <h1>Performance Evaluation System</h1>
+        </div>
+        <div class='content'>
+            <h2>Evaluation Completed</h2>
+            <p>Hello {{EmployeeName}},</p>
+            <p>Your performance evaluation has been completed. Below is a summary of your evaluation results.</p>
+            
+            <div class='evaluation-summary'>
+                <h3>Evaluation Summary</h3>
+                <div class='summary-row'>
+                    <span class='summary-label'>Evaluator:</span>
+                    <span class='summary-value'>{{EvaluatorName}}</span>
+                </div>
+                <div class='summary-row'>
+                    <span class='summary-label'>Period:</span>
+                    <span class='summary-value'>{{Period}}</span>
+                </div>
+                <div class='summary-row'>
+                    <span class='summary-label'>Overall Score:</span>
+                    <span class='summary-value'>{{Score}}</span>
+                </div>
+            </div>
+
+            <div class='score-highlight'>
+                Overall Score: {{Score}}
+            </div>
+
+            <a href='{{EvaluationUrl}}' class='button'>View Full Evaluation</a>
+
+            <p>We encourage you to review your detailed evaluation and discuss any questions with your evaluator or supervisor.</p>
+            <p>Thank you for your continued dedication and hard work!</p>
+        </div>
+        <div class='footer'>
+            <p>This is an automated message from the Performance Evaluation System.</p>
+            <p>Please do not reply to this email.</p>
+        </div>
+    </div>
+</body>
+</html>

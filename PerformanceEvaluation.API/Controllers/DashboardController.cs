@@ -5,6 +5,9 @@ using System.Security.Claims;
 
 namespace PerformanceEvaluation.API.Controllers
 {
+    /// <summary>
+    /// 
+    /// </summary>
     [ApiController]
     [Route("api/[controller]")]
     [Authorize]
@@ -17,6 +20,14 @@ namespace PerformanceEvaluation.API.Controllers
         private readonly ICriteriaCategoryService _categoryService;
         private readonly ILogger<DashboardController> _logger;
 
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="evaluationService"></param>
+        /// <param name="userService"></param>
+        /// <param name="departmentService"></param>
+        /// <param name="categoryService"></param>
+        /// <param name="logger"></param>
         public DashboardController(
             IEvaluationService evaluationService,
             IUserService userService,
