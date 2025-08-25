@@ -18,7 +18,7 @@ const menuItems: MenuItem[] = [
   {
     path: '/users',
     label: 'Users',
-    requiredRoles: [UserRole.ADMIN, UserRole.HR],
+    requiredRoles: [UserRole.ADMIN],
   },
   {
     path: '/criteria',
@@ -28,7 +28,7 @@ const menuItems: MenuItem[] = [
   {
     path: '/departments',
     label: 'Departments',
-    requiredRoles: [UserRole.ADMIN, UserRole.HR],
+    requiredRoles: [UserRole.ADMIN],
   },
   {
     path: '/teams',
@@ -38,7 +38,7 @@ const menuItems: MenuItem[] = [
   {
     path: '/reports',
     label: 'Reports',
-    requiredRoles: [UserRole.ADMIN, UserRole.MANAGER, UserRole.HR],
+    requiredRoles: [UserRole.ADMIN, UserRole.MANAGER],
   },
 ];
 

@@ -33,19 +33,19 @@ export const useEvaluationStore = create<EvaluationStore>()(
         ...initialState,
 
         // Evaluation CRUD
-        fetchEvaluations: async (filters = {}) => {
+        fetchEvaluations: async (filters: any = {}) => {
           try {
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.isLoading = true;
               state.error = null;
             });
 
             useUIStore.getState().setLoading('fetchEvaluations', true);
 
-            const evaluations = await evaluationService.getEvaluations();
+            const response = await evaluationService.getEvaluations();
 
-            set((state) => {
-              state.evaluations = evaluations;
+            set((state: EvaluationStore) => {
+              state.evaluations = response.data;
               state.isLoading = false;
               state.lastFetch.evaluations = Date.now();
             });
@@ -53,7 +53,7 @@ export const useEvaluationStore = create<EvaluationStore>()(
             useUIStore.getState().setLoading('fetchEvaluations', false);
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to fetch evaluations';
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.error = errorMessage;
               state.isLoading = false;
             });
@@ -65,21 +65,21 @@ export const useEvaluationStore = create<EvaluationStore>()(
 
         fetchEvaluationById: async (id: number) => {
           try {
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.isLoading = true;
               state.error = null;
             });
 
             const evaluation = await evaluationService.getEvaluationById(id);
 
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.currentEvaluation = evaluation;
               state.isLoading = false;
               state.lastFetch[`evaluation-${id}`] = Date.now();
             });
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to fetch evaluation';
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.error = errorMessage;
               state.isLoading = false;
             });
@@ -90,21 +90,21 @@ export const useEvaluationStore = create<EvaluationStore>()(
 
         fetchEvaluationForm: async (id: number) => {
           try {
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.isLoading = true;
               state.error = null;
             });
 
             const form = await evaluationService.getEvaluationForm(id);
 
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.evaluationForm = form;
               state.isLoading = false;
               state.lastFetch[`form-${id}`] = Date.now();
             });
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to fetch evaluation form';
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.error = errorMessage;
               state.isLoading = false;
             });
@@ -113,9 +113,9 @@ export const useEvaluationStore = create<EvaluationStore>()(
           }
         },
 
-        createEvaluation: async (data) => {
+        createEvaluation: async (data: CreateEvaluationRequest) => {
           try {
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.isCreating = true;
               state.error = null;
             });
@@ -124,7 +124,7 @@ export const useEvaluationStore = create<EvaluationStore>()(
 
             const newEvaluation = await evaluationService.createEvaluation(data);
 
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.isCreating = false;
               // Invalidate evaluations cache
               delete state.lastFetch.evaluations;
@@ -139,7 +139,7 @@ export const useEvaluationStore = create<EvaluationStore>()(
             return newEvaluation;
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to create evaluation';
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.error = errorMessage;
               state.isCreating = false;
             });
@@ -149,9 +149,9 @@ export const useEvaluationStore = create<EvaluationStore>()(
           }
         },
 
-        updateEvaluation: async (id: number, data) => {
+        updateEvaluation: async (id: number, data: UpdateEvaluationRequest) => {
           try {
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.isUpdating = true;
               state.error = null;
             });
@@ -160,7 +160,7 @@ export const useEvaluationStore = create<EvaluationStore>()(
 
             await evaluationService.updateEvaluation(id, data);
 
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.isUpdating = false;
               // Invalidate cache
               delete state.lastFetch.evaluations;
@@ -177,7 +177,7 @@ export const useEvaluationStore = create<EvaluationStore>()(
             }
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to update evaluation';
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.error = errorMessage;
               state.isUpdating = false;
             });
@@ -191,13 +191,13 @@ export const useEvaluationStore = create<EvaluationStore>()(
           try {
             // Optimistic update
             const previousEvaluations = get().evaluations;
-            set((state) => {
-              state.evaluations = state.evaluations.filter(e => e.id !== id);
+            set((state: EvaluationStore) => {
+              state.evaluations = state.evaluations.filter((e: EvaluationListDto) => e.id !== id);
             });
 
             await evaluationService.deleteEvaluation(id);
 
-            set((state) => {
+            set((state: EvaluationStore) => {
               // Clear related data
               if (state.currentEvaluation?.id === id) {
                 state.currentEvaluation = null;
@@ -209,12 +209,12 @@ export const useEvaluationStore = create<EvaluationStore>()(
             useUIStore.getState().showSuccess('Evaluation deleted successfully');
           } catch (error) {
             // Revert optimistic update
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.evaluations = previousEvaluations;
             });
 
             const errorMessage = error instanceof Error ? error.message : 'Failed to delete evaluation';
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to delete evaluation', errorMessage);
@@ -224,7 +224,7 @@ export const useEvaluationStore = create<EvaluationStore>()(
 
         submitEvaluation: async (id: number) => {
           try {
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.isSubmitting = true;
               state.error = null;
             });
@@ -233,10 +233,10 @@ export const useEvaluationStore = create<EvaluationStore>()(
 
             await evaluationService.submitEvaluation(id);
 
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.isSubmitting = false;
               // Update evaluation status optimistically
-              const evaluation = state.evaluations.find(e => e.id === id);
+              const evaluation = state.evaluations.find((e: EvaluationListDto) => e.id === id);
               if (evaluation) {
                 evaluation.status = 'Submitted';
               }
@@ -249,7 +249,7 @@ export const useEvaluationStore = create<EvaluationStore>()(
             useUIStore.getState().showSuccess('Evaluation submitted successfully');
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to submit evaluation';
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.error = errorMessage;
               state.isSubmitting = false;
             });
@@ -261,17 +261,17 @@ export const useEvaluationStore = create<EvaluationStore>()(
 
         completeEvaluation: async (id: number) => {
           try {
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.isUpdating = true;
               state.error = null;
             });
 
             await evaluationService.completeEvaluation(id);
 
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.isUpdating = false;
               // Update evaluation status optimistically
-              const evaluation = state.evaluations.find(e => e.id === id);
+              const evaluation = state.evaluations.find((e: EvaluationListDto) => e.id === id);
               if (evaluation) {
                 evaluation.status = 'Completed';
                 evaluation.completedDate = new Date().toISOString();
@@ -285,7 +285,7 @@ export const useEvaluationStore = create<EvaluationStore>()(
             useUIStore.getState().showSuccess('Evaluation completed successfully');
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to complete evaluation';
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.error = errorMessage;
               state.isUpdating = false;
             });
@@ -299,13 +299,13 @@ export const useEvaluationStore = create<EvaluationStore>()(
           try {
             const scores = await evaluationService.getEvaluationScores(evaluationId);
 
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.scores[evaluationId] = scores;
               state.lastFetch[`scores-${evaluationId}`] = Date.now();
             });
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to fetch scores';
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to load scores', errorMessage);
@@ -313,7 +313,7 @@ export const useEvaluationStore = create<EvaluationStore>()(
           }
         },
 
-        updateScore: async (evaluationId: number, data) => {
+        updateScore: async (evaluationId: number, data: UpdateScoreRequest) => {
           try {
             await evaluationService.updateScore(evaluationId, data);
 
@@ -323,7 +323,7 @@ export const useEvaluationStore = create<EvaluationStore>()(
             useUIStore.getState().showSuccess('Score updated successfully');
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to update score';
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to update score', errorMessage);
@@ -332,10 +332,10 @@ export const useEvaluationStore = create<EvaluationStore>()(
         },
 
         updateScoreOptimistic: (evaluationId: number, criteriaId: number, score: number) => {
-          set((state) => {
+          set((state: EvaluationStore) => {
             const scores = state.scores[evaluationId] || [];
-            const existingScore = scores.find(s => s.criteriaId === criteriaId);
-            
+            const existingScore = scores.find((s: EvaluationScoreDto) => s.criteriaId === criteriaId);
+
             if (existingScore) {
               existingScore.score = score;
             } else {
@@ -343,12 +343,11 @@ export const useEvaluationStore = create<EvaluationStore>()(
                 id: Date.now(), // temporary ID
                 evaluationId,
                 criteriaId,
-                criteriaName: '',
                 score,
                 createdDate: new Date().toISOString(),
               });
             }
-            
+
             state.scores[evaluationId] = scores;
           });
         },
@@ -358,13 +357,13 @@ export const useEvaluationStore = create<EvaluationStore>()(
           try {
             const comments = await evaluationService.getScoreComments(scoreId);
 
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.comments[scoreId] = comments;
               state.lastFetch[`comments-${scoreId}`] = Date.now();
             });
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to fetch comments';
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to load comments', errorMessage);
@@ -372,17 +371,17 @@ export const useEvaluationStore = create<EvaluationStore>()(
           }
         },
 
-        addComment: async (data) => {
+        addComment: async (data: AddCommentRequest) => {
           try {
             await evaluationService.addComment(data);
 
             // Refresh comments
-            get().fetchComments(data.scoreId);
+            get().fetchComments(data.criteriaId);
 
             useUIStore.getState().showSuccess('Comment added successfully');
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to add comment';
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to add comment', errorMessage);
@@ -390,14 +389,14 @@ export const useEvaluationStore = create<EvaluationStore>()(
           }
         },
 
-        updateComment: async (commentId: number, data) => {
+        updateComment: async (commentId: number, data: UpdateCommentRequest) => {
           try {
             await evaluationService.updateComment(commentId, data);
 
             useUIStore.getState().showSuccess('Comment updated successfully');
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to update comment';
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to update comment', errorMessage);
@@ -410,17 +409,17 @@ export const useEvaluationStore = create<EvaluationStore>()(
             await evaluationService.deleteComment(commentId);
 
             // Remove comment from state
-            set((state) => {
-              Object.keys(state.comments).forEach(scoreId => {
+            set((state: EvaluationStore) => {
+              Object.keys(state.comments).forEach((scoreId: string) => {
                 state.comments[parseInt(scoreId)] = state.comments[parseInt(scoreId)]
-                  .filter(c => c.id !== commentId);
+                  .filter((c: CommentDto) => c.id !== commentId);
               });
             });
 
             useUIStore.getState().showSuccess('Comment deleted successfully');
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to delete comment';
-            set((state) => {
+            set((state: EvaluationStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to delete comment', errorMessage);
@@ -429,54 +428,57 @@ export const useEvaluationStore = create<EvaluationStore>()(
         },
 
         addCommentOptimistic: (scoreId: number, description: string) => {
-          set((state) => {
+          set((state: EvaluationStore) => {
             const comments = state.comments[scoreId] || [];
             comments.push({
               id: Date.now(), // temporary ID
-              scoreId,
-              description,
+              evaluationId: 0, // Will be set by server
+              criteriaId: scoreId,
+              comment: description,
+              createdBy: 0, // Will be set by server
+              createdByName: '', // Will be set by server
               createdDate: new Date().toISOString(),
-              updatedDate: null,
-              isActive: true,
+              lastModifiedDate: undefined,
+              updatedDate: undefined,
             });
             state.comments[scoreId] = comments;
           });
         },
 
         // UI state management
-        setFilters: (filters) => {
-          set((state) => {
+        setFilters: (filters: any) => {
+          set((state: EvaluationStore) => {
             state.filters = { ...state.filters, ...filters };
           });
         },
 
-        setPagination: (pagination) => {
-          set((state) => {
+        setPagination: (pagination: any) => {
+          set((state: EvaluationStore) => {
             state.pagination = { ...state.pagination, ...pagination };
           });
         },
 
-        setError: (error) => {
-          set((state) => {
+        setError: (error: string | null) => {
+          set((state: EvaluationStore) => {
             state.error = error;
           });
         },
 
         clearError: () => {
-          set((state) => {
+          set((state: EvaluationStore) => {
             state.error = null;
           });
         },
 
-        setLoading: (loading) => {
-          set((state) => {
+        setLoading: (loading: boolean) => {
+          set((state: EvaluationStore) => {
             state.isLoading = loading;
           });
         },
 
         // Cache management
-        invalidateCache: (key) => {
-          set((state) => {
+        invalidateCache: (key?: string) => {
+          set((state: EvaluationStore) => {
             if (key) {
               delete state.lastFetch[key];
             } else {
@@ -486,14 +488,14 @@ export const useEvaluationStore = create<EvaluationStore>()(
         },
 
         clearCurrentEvaluation: () => {
-          set((state) => {
+          set((state: EvaluationStore) => {
             state.currentEvaluation = null;
             state.evaluationForm = null;
           });
         },
 
         reset: () => {
-          set((state) => {
+          set((state: EvaluationStore) => {
             Object.assign(state, initialState);
           });
         },

@@ -1,79 +1,54 @@
-import React from 'react';
+import React, { forwardRef } from 'react';
+import { cn } from '@/lib/utils';
 import { cva, type VariantProps } from 'class-variance-authority';
-import { cn } from '../../utils/cn';
 
 const inputVariants = cva(
-  'block w-full rounded-lg border-gray-200 shadow-sm focus:border-primary-500 focus:ring-primary-500 transition-colors duration-200',
+  'flex w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50',
   {
     variants: {
       variant: {
-        default: 'border-gray-200',
-        error: 'border-error-500 focus:border-error-500 focus:ring-error-500',
-        success: 'border-success-500 focus:border-success-500 focus:ring-success-500',
+        default: 'border-gray-300 focus:border-blue-500 focus:ring-blue-500',
+        error: 'border-red-300 focus:border-red-500 focus:ring-red-500',
+        success: 'border-green-300 focus:border-green-500 focus:ring-green-500',
       },
-      size: {
-        sm: 'px-3 py-1.5 text-sm',
-        md: 'px-4 py-2 text-base',
-        lg: 'px-4 py-3 text-lg',
+      inputSize: {
+        sm: 'px-2 py-1 text-xs',
+        md: 'px-3 py-2 text-sm',
+        lg: 'px-4 py-3 text-base',
       },
     },
     defaultVariants: {
       variant: 'default',
-      size: 'md',
+      inputSize: 'md',
     },
   }
 );
 
 export interface InputProps
-  extends React.InputHTMLAttributes<HTMLInputElement>,
+  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
     VariantProps<typeof inputVariants> {
-  label?: string;
-  error?: string;
-  help?: string;
-  leftIcon?: React.ReactNode;
-  rightIcon?: React.ReactNode;
+  size?: 'sm' | 'md' | 'lg';
+  error?: boolean;
+  success?: boolean;
 }
 
-const Input = React.forwardRef<HTMLInputElement, InputProps>(
-  ({ className, variant, size, label, error, help, leftIcon, rightIcon, id, ...props }, ref) => {
-    const inputId = id || `input-${Math.random().toString(36).substr(2, 9)}`;
-    
+const Input = forwardRef<HTMLInputElement, InputProps>(
+  ({ className, type, variant, inputSize, size, error, success, ...props }, ref) => {
+    // Determine variant based on error/success states
+    let finalVariant = variant;
+    if (error) finalVariant = 'error';
+    if (success) finalVariant = 'success';
+
+    // Use size prop if provided, otherwise use inputSize
+    const finalSize = size || inputSize;
+
     return (
-      <div className="w-full">
-        {label && (
-          <label htmlFor={inputId} className="form-label">
-            {label}
-          </label>
-        )}
-        <div className="relative">
-          {leftIcon && (
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <span className="text-gray-400">{leftIcon}</span>
-            </div>
-          )}
-          <input
-            id={inputId}
-            className={cn(
-              inputVariants({ variant: error ? 'error' : variant, size, className }),
-              leftIcon && 'pl-10',
-              rightIcon && 'pr-10'
-            )}
-            ref={ref}
-            {...props}
-          />
-          {rightIcon && (
-            <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
-              <span className="text-gray-400">{rightIcon}</span>
-            </div>
-          )}
-        </div>
-        {error && (
-          <p className="form-error">{error}</p>
-        )}
-        {help && !error && (
-          <p className="form-help">{help}</p>
-        )}
-      </div>
+      <input
+        type={type}
+        className={cn(inputVariants({ variant: finalVariant, inputSize: finalSize }), className)}
+        ref={ref}
+        {...props}
+      />
     );
   }
 );

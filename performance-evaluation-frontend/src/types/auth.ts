@@ -1,19 +1,18 @@
 import { UserRole } from './roles';
 
-// Authentication types matching backend DTOs
+// Authentication types matching backend DTOs exactly
 export interface LoginRequest {
   email: string;
   password: string;
-  rememberMe?: boolean;
 }
 
 export interface LoginResponse {
   success: boolean;
   message: string;
   user: UserInfo;
-  accessToken?: string;
-  refreshToken?: string;
-  expiresAt?: string;
+  accessToken: string;
+  refreshToken: string;
+  expiresAt: Date;
 }
 
 export interface UserInfo {
@@ -21,25 +20,15 @@ export interface UserInfo {
   firstName: string;
   lastName: string;
   email: string;
-  departmentID: number;
+  departmentId?: number;
   roleIds: number[];
-  roles?: string[]; // Role names from backend
-  primaryRole?: UserRole | null; // Primary role for RBAC
-  permissions?: string[];
-  profilePicture?: string;
-  isActive: boolean;
-}
-
-export interface RefreshTokenRequest {
-  refreshToken: string;
+  roles?: string[];
+  primaryRole?: UserRole;
 }
 
 export interface RefreshTokenResponse {
-  isSuccess: boolean;
   message: string;
-  accessToken: string;
-  refreshToken: string;
-  expiresAt: string;
+  expiresAt: Date;
 }
 
 export interface AuthState {
@@ -48,14 +37,7 @@ export interface AuthState {
   isLoading: boolean;
   isInitialized: boolean;
   error: string | null;
-}
-
-export interface AuthResult {
-  isSuccess: boolean;
-  message: string;
-  accessToken?: string;
-  refreshToken?: string;
-  expiresAt?: string;
+  loading: boolean;
 }
 
 export interface AuthContextType {
@@ -63,18 +45,23 @@ export interface AuthContextType {
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;
   refreshAuth: () => Promise<void>;
+  refreshToken: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  updateUser: (userData: Partial<UserInfo>) => void;
+  initializeAuth: () => Promise<void>;
   hasRole: (role: UserRole) => boolean;
   hasPermission: (resource: string, action: string) => boolean;
   canAccessRoute: (path: string) => boolean;
   clearError: () => void;
+  // Add missing properties that are being used
+  loading: boolean;
+  user: UserInfo | null;
 }
 
 // Form validation schemas
 export interface LoginFormData {
   email: string;
   password: string;
-  rememberMe: boolean;
 }
 
 export interface LoginFormErrors {

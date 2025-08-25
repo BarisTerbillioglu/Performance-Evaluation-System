@@ -4,3 +4,5 @@ export * from './DashboardPage';
 export * from './admin';
 export * from './evaluator';
 export * from './employee';
+export * from './analytics';
+export * from './reports';

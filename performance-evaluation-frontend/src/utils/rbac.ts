@@ -1,176 +1,252 @@
-import { UserRole, ROLE_PERMISSIONS, ROLE_HIERARCHY, ROUTE_ACCESS, ROLE_REDIRECT_PATHS } from '@/types/roles';
 import { UserInfo } from '@/types/auth';
+import { UserRole } from '@/types/roles';
+
+// Role hierarchy (higher number = more permissions)
+const ROLE_HIERARCHY: Record<UserRole, number> = {
+  [UserRole.EMPLOYEE]: 1,
+  [UserRole.EVALUATOR]: 2,
+  [UserRole.MANAGER]: 3,
+  [UserRole.ADMIN]: 4,
+};
+
+// Policy definitions
+export const POLICIES = {
+  // AdminOnly: Admin role required
+  ADMIN_ONLY: [UserRole.ADMIN] as UserRole[],
+  
+  // EvaluatorOrAdmin: Evaluator, Manager, or Admin role required
+  EVALUATOR_OR_ADMIN: [UserRole.EVALUATOR, UserRole.MANAGER, UserRole.ADMIN] as UserRole[],
+  
+  // AllUsers: Any authenticated user (Employee, Evaluator, Manager, Admin)
+  ALL_USERS: [UserRole.EMPLOYEE, UserRole.EVALUATOR, UserRole.MANAGER, UserRole.ADMIN] as UserRole[],
+} as const;
 
 /**
- * Determine the primary role for a user based on their roles
+ * Get the primary role for a user (highest role in hierarchy)
  */
-export const getUserPrimaryRole = (user: UserInfo): UserRole | null => {
-  if (!user.roles || user.roles.length === 0) {
+export const getUserPrimaryRole = (user: UserInfo | null): UserRole | null => {
+  if (!user || !user.roleIds || user.roleIds.length === 0) {
     return null;
   }
 
-  // Check if user has admin role
-  if (user.roles.includes('Admin')) return UserRole.ADMIN;
-  if (user.roles.includes('Manager')) return UserRole.MANAGER;
-  if (user.roles.includes('HR')) return UserRole.HR;
-  if (user.roles.includes('Evaluator')) return UserRole.EVALUATOR;
-  if (user.roles.includes('Employee')) return UserRole.EMPLOYEE;
+  // Find the highest role in the hierarchy
+  let highestRole: UserRole | null = null;
+  let highestLevel = -1;
 
-  // Default to Employee if no specific role found
-  return UserRole.EMPLOYEE;
+  for (const roleId of user.roleIds) {
+    const role = roleId as UserRole;
+    if (role && ROLE_HIERARCHY[role] > highestLevel) {
+      highestLevel = ROLE_HIERARCHY[role];
+      highestRole = role;
+    }
+  }
+
+  return highestRole;
 };
 
 /**
  * Check if user has a specific role
  */
 export const hasRole = (user: UserInfo | null, role: UserRole): boolean => {
-  if (!user || !user.roles) return false;
-  
-  const primaryRole = getUserPrimaryRole(user);
-  if (!primaryRole) return false;
-
-  // Check direct role match
-  if (primaryRole === role) return true;
-
-  // Check role hierarchy (higher roles inherit lower role permissions)
-  const inheritedRoles = ROLE_HIERARCHY[primaryRole] || [];
-  return inheritedRoles.includes(role);
-};
-
-/**
- * Check if user has permission for a specific resource and action
- */
-export const hasPermission = (user: UserInfo | null, resource: string, action: string): boolean => {
-  if (!user) return false;
-
-  const primaryRole = getUserPrimaryRole(user);
-  if (!primaryRole) return false;
-
-  // Get permissions for the user's role
-  const rolePermissions = ROLE_PERMISSIONS[primaryRole] || [];
-  
-  // Check if user has permission for the resource and action
-  return rolePermissions.some(permission => 
-    permission.resource === resource && permission.actions.includes(action)
-  );
-};
-
-/**
- * Check if user can access a specific route
- */
-export const canAccessRoute = (user: UserInfo | null, path: string): boolean => {
-  if (!user) return false;
-
-  const primaryRole = getUserPrimaryRole(user);
-  if (!primaryRole) return false;
-
-  // Find matching route access rule
-  const routeRule = ROUTE_ACCESS.find(rule => {
-    if (rule.path.endsWith('/*')) {
-      const basePath = rule.path.slice(0, -2);
-      return path.startsWith(basePath);
-    }
-    return rule.path === path;
-  });
-
-  // If no specific rule found, allow access
-  if (!routeRule) return true;
-
-  // Check if user's role is allowed
-  return routeRule.roles.includes(primaryRole) || 
-         routeRule.roles.some(allowedRole => hasRole(user, allowedRole));
-};
-
-/**
- * Get the appropriate redirect path for a user after login
- */
-export const getRedirectPath = (user: UserInfo): string => {
-  const primaryRole = getUserPrimaryRole(user);
-  if (!primaryRole) return '/dashboard';
-
-  return ROLE_REDIRECT_PATHS[primaryRole] || '/dashboard';
-};
-
-/**
- * Get all permissions for a user based on their role
- */
-export const getUserPermissions = (user: UserInfo | null): string[] => {
-  if (!user) return [];
-
-  const primaryRole = getUserPrimaryRole(user);
-  if (!primaryRole) return [];
-
-  const rolePermissions = ROLE_PERMISSIONS[primaryRole] || [];
-  const permissions: string[] = [];
-
-  rolePermissions.forEach(permission => {
-    permission.actions.forEach(action => {
-      permissions.push(`${permission.resource}:${action}`);
-    });
-  });
-
-  return permissions;
+  if (!user || !user.roleIds) {
+    return false;
+  }
+  return user.roleIds.includes(role);
 };
 
 /**
  * Check if user has any of the specified roles
  */
 export const hasAnyRole = (user: UserInfo | null, roles: UserRole[]): boolean => {
-  if (!user || !roles.length) return false;
-  return roles.some(role => hasRole(user, role));
+  if (!user || !user.roleIds) {
+    return false;
+  }
+  return roles.some(role => user.roleIds.includes(role));
 };
 
 /**
  * Check if user has all of the specified roles
  */
 export const hasAllRoles = (user: UserInfo | null, roles: UserRole[]): boolean => {
-  if (!user || !roles.length) return false;
-  return roles.every(role => hasRole(user, role));
+  if (!user || !user.roleIds) {
+    return false;
+  }
+  return roles.every(role => user.roleIds.includes(role));
 };
 
 /**
- * Get display name for a role
+ * Check if user has permission for a specific resource and action
  */
-export const getRoleDisplayName = (role: UserRole): string => {
-  const displayNames: Record<UserRole, string> = {
-    [UserRole.ADMIN]: 'Administrator',
-    [UserRole.MANAGER]: 'Manager',
-    [UserRole.HR]: 'Human Resources',
-    [UserRole.EVALUATOR]: 'Evaluator',
-    [UserRole.EMPLOYEE]: 'Employee'
+export const hasPermission = (user: UserInfo | null, resource: string, action: string): boolean => {
+  if (!user) {
+    return false;
+  }
+
+  const primaryRole = getUserPrimaryRole(user);
+  if (!primaryRole) {
+    return false;
+  }
+
+  // Define permissions based on role hierarchy
+  const permissions: Record<UserRole, Record<string, string[]>> = {
+    [UserRole.EMPLOYEE]: {
+      'evaluation': ['read', 'update_own'],
+      'profile': ['read', 'update_own'],
+      'dashboard': ['read_own'],
+    },
+    [UserRole.EVALUATOR]: {
+      'evaluation': ['read', 'create', 'update', 'delete', 'submit'],
+      'user': ['read'],
+      'team': ['read'],
+      'criteria': ['read'],
+      'dashboard': ['read_team'],
+      'profile': ['read', 'update_own'],
+    },
+    [UserRole.MANAGER]: {
+      'evaluation': ['read', 'create', 'update', 'delete', 'submit', 'approve'],
+      'user': ['read', 'create', 'update'],
+      'team': ['read', 'create', 'update', 'delete'],
+      'department': ['read', 'create', 'update'],
+      'criteria': ['read', 'create', 'update'],
+      'dashboard': ['read_department', 'read_team'],
+      'profile': ['read', 'update_own'],
+    },
+    [UserRole.ADMIN]: {
+      'evaluation': ['read', 'create', 'update', 'delete', 'submit', 'approve'],
+      'user': ['read', 'create', 'update', 'delete'],
+      'team': ['read', 'create', 'update', 'delete'],
+      'department': ['read', 'create', 'update', 'delete'],
+      'criteria': ['read', 'create', 'update', 'delete'],
+      'criteriaCategory': ['read', 'create', 'update', 'delete'],
+      'dashboard': ['read_all'],
+      'profile': ['read', 'update_own'],
+      'system': ['manage'],
+    },
   };
 
-  return displayNames[role] || role;
+  const rolePermissions = permissions[primaryRole];
+  if (!rolePermissions) {
+    return false;
+  }
+
+  const resourcePermissions = rolePermissions[resource];
+  if (!resourcePermissions) {
+    return false;
+  }
+
+  return resourcePermissions.includes(action);
 };
 
 /**
- * Filter menu items based on user permissions
+ * Check if user can access a specific route
  */
-export interface MenuItem {
-  path: string;
-  label: string;
-  requiredRoles?: UserRole[];
-  requiredPermission?: { resource: string; action: string };
-}
+export const canAccessRoute = (user: UserInfo | null, path: string): boolean => {
+  if (!user) {
+    return false;
+  }
 
-export const filterMenuItems = (user: UserInfo | null, menuItems: MenuItem[]): MenuItem[] => {
-  if (!user) return [];
+  // Define route access based on role
+  const routeAccess: Record<string, UserRole[]> = {
+    // Public routes (no auth required)
+    '/login': [],
+    '/forgot-password': [],
+    
+    // Employee routes
+    '/dashboard': [...POLICIES.ALL_USERS],
+    '/profile': [...POLICIES.ALL_USERS],
+    '/evaluations/my': [...POLICIES.ALL_USERS],
+    
+    // Evaluator routes
+    '/evaluations': [...POLICIES.EVALUATOR_OR_ADMIN],
+    '/evaluations/create': [...POLICIES.EVALUATOR_OR_ADMIN],
+    '/evaluations/:id': [...POLICIES.EVALUATOR_OR_ADMIN],
+    '/teams': [...POLICIES.EVALUATOR_OR_ADMIN],
+    '/users': [...POLICIES.EVALUATOR_OR_ADMIN],
+    
+    // Manager routes
+    '/departments': [...POLICIES.EVALUATOR_OR_ADMIN],
+    '/teams/create': [...POLICIES.EVALUATOR_OR_ADMIN],
+    '/teams/:id/edit': [...POLICIES.EVALUATOR_OR_ADMIN],
+    '/users/create': [...POLICIES.EVALUATOR_OR_ADMIN],
+    '/users/:id/edit': [...POLICIES.EVALUATOR_OR_ADMIN],
+    
+    // Admin routes
+    '/admin': [...POLICIES.ADMIN_ONLY],
+    '/admin/users': [...POLICIES.ADMIN_ONLY],
+    '/admin/departments': [...POLICIES.ADMIN_ONLY],
+    '/admin/teams': [...POLICIES.ADMIN_ONLY],
+    '/admin/criteria': [...POLICIES.ADMIN_ONLY],
+    '/admin/criteria-categories': [...POLICIES.ADMIN_ONLY],
+    '/admin/reports': [...POLICIES.ADMIN_ONLY],
+    '/admin/settings': [...POLICIES.ADMIN_ONLY],
+  };
 
-  return menuItems.filter(item => {
-    // Check role requirements
-    if (item.requiredRoles && !hasAnyRole(user, item.requiredRoles)) {
-      return false;
+  // Find matching route pattern
+  for (const [pattern, allowedRoles] of Object.entries(routeAccess)) {
+    if (pattern === path || matchesPattern(path, pattern)) {
+      return hasAnyRole(user, allowedRoles);
     }
+  }
 
-    // Check permission requirements
-    if (item.requiredPermission) {
-      const { resource, action } = item.requiredPermission;
-      if (!hasPermission(user, resource, action)) {
-        return false;
-      }
-    }
+  // Default to false for unknown routes
+  return false;
+};
 
-    // Check route access
-    return canAccessRoute(user, item.path);
-  });
+/**
+ * Check if a path matches a pattern (simple pattern matching)
+ */
+const matchesPattern = (path: string, pattern: string): boolean => {
+  // Convert pattern to regex
+  const regexPattern = pattern
+    .replace(/:[^/]+/g, '[^/]+') // Replace :param with regex
+    .replace(/\//g, '\\/'); // Escape slashes
+  
+  const regex = new RegExp(`^${regexPattern}$`);
+  return regex.test(path);
+};
+
+/**
+ * Get the default redirect path for a user based on their role
+ */
+export const getRedirectPath = (user: UserInfo): string => {
+  const primaryRole = getUserPrimaryRole(user);
+  
+  switch (primaryRole) {
+    case UserRole.ADMIN:
+      return '/admin';
+    case UserRole.MANAGER:
+      return '/dashboard';
+    case UserRole.EVALUATOR:
+      return '/evaluations';
+    case UserRole.EMPLOYEE:
+      return '/evaluations/my';
+    default:
+      return '/dashboard';
+  }
+};
+
+/**
+ * Check if user can perform a specific action on a resource
+ */
+export const canPerformAction = (
+  user: UserInfo | null, 
+  resource: string, 
+  action: string, 
+  resourceOwnerId?: number
+): boolean => {
+  if (!user) {
+    return false;
+  }
+
+  // Check basic permission
+  if (!hasPermission(user, resource, action)) {
+    return false;
+  }
+
+  // Check ownership for certain actions
+  if (action.includes('own') && resourceOwnerId) {
+    return user.id === resourceOwnerId;
+  }
+
+  return true;
 };

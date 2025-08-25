@@ -82,29 +82,29 @@ export const EvaluationListPage: React.FC = () => {
   // Determine available views based on user role
   const availableViews = useMemo(() => {
     const views = [
-      { key: 'all', label: 'All Evaluations', roles: ['Admin', 'Manager', 'HR'] }
+      { key: 'all', label: 'All Evaluations', roles: [UserRole.ADMIN, UserRole.MANAGER] }
     ];
 
     if (hasRole(UserRole.EMPLOYEE) || hasRole(UserRole.EVALUATOR) || hasRole(UserRole.MANAGER)) {
-      views.push({ key: 'my', label: 'My Evaluations', roles: ['Employee', 'Evaluator', 'Manager'] });
+      views.push({ key: 'my', label: 'My Evaluations', roles: [UserRole.EMPLOYEE, UserRole.EVALUATOR, UserRole.MANAGER] });
     }
 
     if (hasRole(UserRole.EVALUATOR) || hasRole(UserRole.MANAGER)) {
-      views.push({ key: 'assigned', label: 'Assigned to Me', roles: ['Evaluator', 'Manager'] });
+      views.push({ key: 'assigned', label: 'Assigned to Me', roles: [UserRole.EVALUATOR, UserRole.MANAGER] });
     }
 
     if (hasRole(UserRole.MANAGER)) {
-      views.push({ key: 'team', label: 'Team Evaluations', roles: ['Manager'] });
+      views.push({ key: 'team', label: 'Team Evaluations', roles: [UserRole.MANAGER] });
     }
 
     return views.filter(view => 
-      view.roles.some(role => hasRole(role as UserRole))
+      view.roles.some(role => hasRole(role))
     );
   }, [hasRole]);
 
   // Set default view based on user role
   useEffect(() => {
-    if (hasRole(UserRole.ADMIN) || hasRole(UserRole.HR)) {
+    if (hasRole(UserRole.ADMIN)) {
       setFilters(prev => ({ ...prev, view: 'all' }));
     } else if (hasRole(UserRole.EVALUATOR) || hasRole(UserRole.MANAGER)) {
       setFilters(prev => ({ ...prev, view: 'assigned' }));

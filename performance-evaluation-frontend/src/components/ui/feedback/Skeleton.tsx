@@ -1,51 +1,19 @@
 import React from 'react';
-import { cn } from '@/utils/cn';
+import { cn } from '@/lib/utils';
 
-interface SkeletonProps {
-  className?: string;
-  variant?: 'text' | 'circular' | 'rectangular';
-  width?: string | number;
-  height?: string | number;
-  animation?: 'pulse' | 'wave' | 'none';
-}
+const Skeleton = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn("animate-pulse rounded-md bg-muted", className)}
+    {...props}
+  />
+));
+Skeleton.displayName = "Skeleton";
 
-export const Skeleton: React.FC<SkeletonProps> = ({
-  className,
-  variant = 'rectangular',
-  width,
-  height,
-  animation = 'pulse',
-}) => {
-  const baseClasses = 'bg-gray-200 rounded';
-  
-  const variantClasses = {
-    text: 'h-4 w-full',
-    circular: 'rounded-full',
-    rectangular: 'rounded',
-  };
-
-  const animationClasses = {
-    pulse: 'animate-pulse',
-    wave: 'animate-pulse',
-    none: '',
-  };
-
-  const style: React.CSSProperties = {};
-  if (width) style.width = typeof width === 'number' ? `${width}px` : width;
-  if (height) style.height = typeof height === 'number' ? `${height}px` : height;
-
-  return (
-    <div
-      className={cn(
-        baseClasses,
-        variantClasses[variant],
-        animationClasses[animation],
-        className
-      )}
-      style={style}
-    />
-  );
-};
+export { Skeleton };
 
 // Predefined skeleton components for common use cases
 export const TableSkeleton: React.FC<{ rows?: number; columns?: number }> = ({

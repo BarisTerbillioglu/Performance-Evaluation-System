@@ -10,6 +10,13 @@ export const authService = {
   },
 
   /**
+   * Get current user information
+   */
+  getCurrentUser: async (): Promise<UserInfo> => {
+    return await apiClient.get<UserInfo>('/api/auth/me');
+  },
+
+  /**
    * Refresh token - uses HTTP-only cookies automatically
    */
   refreshToken: async (): Promise<RefreshTokenResponse> => {
@@ -24,13 +31,6 @@ export const authService = {
   },
 
   /**
-   * Get current user information
-   */
-  getCurrentUser: async (): Promise<UserInfo> => {
-    return await apiClient.get<UserInfo>('/api/auth/me');
-  },
-
-  /**
    * Check if user is authenticated by trying to get current user
    */
   checkAuth: async (): Promise<UserInfo | null> => {
@@ -39,23 +39,5 @@ export const authService = {
     } catch {
       return null;
     }
-  },
-
-  /**
-   * Change password
-   */
-  changePassword: async (data: { 
-    currentPassword: string; 
-    newPassword: string; 
-    confirmPassword: string; 
-  }): Promise<{ message: string }> => {
-    return await apiClient.post<{ message: string }>('/api/auth/change-password', data);
-  },
-
-  /**
-   * Reset password request
-   */
-  resetPassword: async (email: string): Promise<{ message: string }> => {
-    return await apiClient.post<{ message: string }>('/api/auth/reset-password', { email });
   },
 };

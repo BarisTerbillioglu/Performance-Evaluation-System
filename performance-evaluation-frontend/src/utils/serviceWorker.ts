@@ -50,7 +50,9 @@ export function unregisterServiceWorker() {
 export async function registerBackgroundSync(tag: string) {
   if ('serviceWorker' in navigator && 'sync' in window.ServiceWorkerRegistration.prototype) {
     const registration = await navigator.serviceWorker.ready;
-    await registration.sync.register(tag);
+    // Use type assertion to access sync property
+    const extendedRegistration = registration as ServiceWorkerRegistration & { sync: SyncManager };
+    await extendedRegistration.sync.register(tag);
   }
 }
 

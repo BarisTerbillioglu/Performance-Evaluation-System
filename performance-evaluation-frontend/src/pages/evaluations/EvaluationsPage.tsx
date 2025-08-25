@@ -1,1 +1,1 @@
-export { EvaluationListPage as EvaluationsPage } from './EvaluationListPage';
+export { EvaluationManagementPage as EvaluationsPage } from './EvaluationManagementPage';

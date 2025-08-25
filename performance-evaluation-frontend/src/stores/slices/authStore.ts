@@ -31,9 +31,9 @@ export const useAuthStore = create<AuthStore>()(
           ...initialState,
 
           // Authentication actions
-          login: async (credentials) => {
+          login: async (credentials: { email: string; password: string }) => {
             try {
-              set((state) => {
+              set((state: AuthStore) => {
                 state.isLoading = true;
                 state.error = null;
               });
@@ -46,7 +46,7 @@ export const useAuthStore = create<AuthStore>()(
                   primaryRole: getUserPrimaryRole(response.user),
                 };
 
-                set((state) => {
+                set((state: AuthStore) => {
                   state.user = userWithRole;
                   state.isAuthenticated = true;
                   state.isLoading = false;
@@ -62,7 +62,7 @@ export const useAuthStore = create<AuthStore>()(
               }
             } catch (error) {
               const errorMessage = error instanceof Error ? error.message : 'Login failed';
-              set((state) => {
+              set((state: AuthStore) => {
                 state.error = errorMessage;
                 state.isLoading = false;
               });
@@ -72,7 +72,7 @@ export const useAuthStore = create<AuthStore>()(
 
           logout: async () => {
             try {
-              set((state) => {
+              set((state: AuthStore) => {
                 state.isLoading = true;
               });
 
@@ -82,7 +82,7 @@ export const useAuthStore = create<AuthStore>()(
               console.error('Logout error:', error);
             } finally {
               // Always clear local state
-              set((state) => {
+              set((state: AuthStore) => {
                 Object.assign(state, {
                   ...initialState,
                   isInitialized: true,
@@ -103,7 +103,7 @@ export const useAuthStore = create<AuthStore>()(
                 primaryRole: getUserPrimaryRole(user),
               };
 
-              set((state) => {
+              set((state: AuthStore) => {
                 state.user = userWithRole;
                 state.isAuthenticated = true;
                 state.lastRefresh = new Date().toISOString();
@@ -111,7 +111,7 @@ export const useAuthStore = create<AuthStore>()(
               });
             } catch (error) {
               console.error('Token refresh failed:', error);
-              set((state) => {
+              set((state: AuthStore) => {
                 Object.assign(state, {
                   ...initialState,
                   isInitialized: true,
@@ -124,7 +124,7 @@ export const useAuthStore = create<AuthStore>()(
           checkAuth: async () => {
             try {
               if (!get().isInitialized) {
-                set((state) => {
+                set((state: AuthStore) => {
                   state.isLoading = true;
                 });
               }
@@ -138,7 +138,7 @@ export const useAuthStore = create<AuthStore>()(
                   primaryRole: getUserPrimaryRole(user),
                 };
 
-                set((state) => {
+                set((state: AuthStore) => {
                   state.user = userWithRole;
                   state.isAuthenticated = true;
                   state.isLoading = false;
@@ -146,7 +146,7 @@ export const useAuthStore = create<AuthStore>()(
                   state.error = null;
                 });
               } else {
-                set((state) => {
+                set((state: AuthStore) => {
                   Object.assign(state, {
                     ...initialState,
                     isInitialized: true,
@@ -155,7 +155,7 @@ export const useAuthStore = create<AuthStore>()(
               }
             } catch (error) {
               console.error('Auth check failed:', error);
-              set((state) => {
+              set((state: AuthStore) => {
                 Object.assign(state, {
                   ...initialState,
                   isInitialized: true,

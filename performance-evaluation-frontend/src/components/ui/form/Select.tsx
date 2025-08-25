@@ -1,193 +1,120 @@
-import React, { forwardRef, Fragment } from 'react';
-import { Listbox, Transition } from '@headlessui/react';
-import { ChevronUpDownIcon, CheckIcon } from '@heroicons/react/20/solid';
-import { cn } from '@/utils/cn';
+import React from 'react';
+import { cn } from '@/lib/utils';
 
-export interface SelectOption {
-  value: string | number;
-  label: string;
-  disabled?: boolean;
-}
-
-export interface SelectProps {
-  options: SelectOption[];
-  value?: string | number;
-  onChange?: (value: string | number) => void;
-  placeholder?: string;
-  label?: string;
-  helperText?: string;
+// Custom Select component with options prop
+interface SelectWithOptionsProps extends React.SelectHTMLAttributes<HTMLSelectElement> {
+  options?: Array<{ value: string | number; label: string }>;
   error?: string;
-  disabled?: boolean;
-  required?: boolean;
-  className?: string;
-  size?: 'sm' | 'md' | 'lg';
-  multiple?: boolean;
 }
 
-const Select = forwardRef<HTMLButtonElement, SelectProps>(
-  (
-    {
-      options,
-      value,
-      onChange,
-      placeholder = 'Select an option...',
-      label,
-      helperText,
-      error,
-      disabled = false,
-      required = false,
-      className,
-      size = 'md',
-      multiple = false,
-      ...props
-    },
-    ref
-  ) => {
-    const selectId = `select-${Math.random().toString(36).substr(2, 9)}`;
-    const errorId = error ? `${selectId}-error` : undefined;
-    const helperTextId = helperText ? `${selectId}-helper` : undefined;
-
-    const sizeClasses = {
-      sm: 'h-8 px-2 text-xs',
-      md: 'h-10 px-3 text-sm',
-      lg: 'h-12 px-4 text-base',
-    };
-
-    const selectedOption = options.find(option => option.value === value);
-    const displayValue = selectedOption ? selectedOption.label : placeholder;
-
-    return (
-      <div className="space-y-2">
-        {label && (
-          <label
-            htmlFor={selectId}
-            className={cn(
-              'text-sm font-medium leading-none',
-              required && 'after:content-["*"] after:ml-0.5 after:text-red-500',
-              disabled && 'opacity-70'
-            )}
-          >
-            {label}
-          </label>
+const SelectWithOptions = React.forwardRef<HTMLSelectElement, SelectWithOptionsProps>(
+  ({ className, options = [], error, children, ...props }, ref) => (
+    <div className="w-full">
+      <select
+        className={cn(
+          "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          error && "border-red-500",
+          className
         )}
-        
-        <Listbox
-          value={value}
-          onChange={(newValue) => onChange?.(newValue)}
-          disabled={disabled}
-          multiple={multiple}
-        >
-          {({ open }) => (
-            <div className="relative">
-              <Listbox.Button
-                ref={ref}
-                className={cn(
-                  'relative w-full cursor-default rounded-md border bg-white py-2 pl-3 pr-10 text-left shadow-sm transition-colors',
-                  'focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500',
-                  'disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-500',
-                  error
-                    ? 'border-red-500 focus:border-red-500 focus:ring-red-500'
-                    : 'border-gray-300',
-                  sizeClasses[size],
-                  className
-                )}
-                aria-invalid={error ? 'true' : 'false'}
-                aria-describedby={cn(
-                  error && errorId,
-                  helperText && helperTextId
-                )}
-                {...props}
-              >
-                <span className={cn(
-                  'block truncate',
-                  !selectedOption && 'text-gray-500'
-                )}>
-                  {displayValue}
-                </span>
-                <span className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
-                  <ChevronUpDownIcon
-                    className="h-5 w-5 text-gray-400"
-                    aria-hidden="true"
-                  />
-                </span>
-              </Listbox.Button>
-
-              <Transition
-                show={open}
-                as={Fragment}
-                leave="transition ease-in duration-100"
-                leaveFrom="opacity-100"
-                leaveTo="opacity-0"
-              >
-                <Listbox.Options className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none sm:text-sm">
-                  {options.map((option) => (
-                    <Listbox.Option
-                      key={option.value}
-                      className={({ active, disabled: optionDisabled }) =>
-                        cn(
-                          'relative cursor-default select-none py-2 pl-3 pr-9',
-                          active && !optionDisabled
-                            ? 'bg-primary-600 text-white'
-                            : 'text-gray-900',
-                          optionDisabled && 'cursor-not-allowed opacity-50'
-                        )
-                      }
-                      value={option.value}
-                      disabled={option.disabled}
-                    >
-                      {({ selected, active }) => (
-                        <>
-                          <span
-                            className={cn(
-                              'block truncate',
-                              selected ? 'font-medium' : 'font-normal'
-                            )}
-                          >
-                            {option.label}
-                          </span>
-                          {selected ? (
-                            <span
-                              className={cn(
-                                'absolute inset-y-0 right-0 flex items-center pr-4',
-                                active ? 'text-white' : 'text-primary-600'
-                              )}
-                            >
-                              <CheckIcon className="h-5 w-5" aria-hidden="true" />
-                            </span>
-                          ) : null}
-                        </>
-                      )}
-                    </Listbox.Option>
-                  ))}
-                </Listbox.Options>
-              </Transition>
-            </div>
-          )}
-        </Listbox>
-
-        {error && (
-          <p
-            id={errorId}
-            className="text-sm text-red-600"
-            role="alert"
-            aria-live="polite"
-          >
-            {error}
-          </p>
-        )}
-        {helperText && !error && (
-          <p
-            id={helperTextId}
-            className="text-sm text-gray-500"
-          >
-            {helperText}
-          </p>
-        )}
-      </div>
-    );
-  }
+        ref={ref}
+        {...props}
+      >
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+        {children}
+      </select>
+      {error && (
+        <p className="mt-1 text-sm text-red-500">{error}</p>
+      )}
+    </div>
+  )
 );
+SelectWithOptions.displayName = "SelectWithOptions";
 
-Select.displayName = 'Select';
+const Select = React.forwardRef<
+  HTMLSelectElement,
+  React.SelectHTMLAttributes<HTMLSelectElement>
+>(({ className, children, ...props }, ref) => (
+  <select
+    className={cn(
+      "flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+      className
+    )}
+    ref={ref}
+    {...props}
+  >
+    {children}
+  </select>
+));
+Select.displayName = "Select";
 
-export { Select };
+const SelectTrigger = React.forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement>
+>(({ className, children, ...props }, ref) => (
+  <button
+    ref={ref}
+    className={cn(
+      "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+      className
+    )}
+    {...props}
+  >
+    {children}
+  </button>
+));
+SelectTrigger.displayName = "SelectTrigger";
+
+const SelectValue = React.forwardRef<
+  HTMLSpanElement,
+  React.HTMLAttributes<HTMLSpanElement>
+>(({ className, ...props }, ref) => (
+  <span
+    ref={ref}
+    className={cn("block truncate", className)}
+    {...props}
+  />
+));
+SelectValue.displayName = "SelectValue";
+
+const SelectContent = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement>
+>(({ className, children, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "relative z-50 min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+      className
+    )}
+    {...props}
+  >
+    {children}
+  </div>
+));
+SelectContent.displayName = "SelectContent";
+
+const SelectItem = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & {
+    value?: string;
+  }
+>(({ className, children, value, ...props }, ref) => (
+  <div
+    ref={ref}
+    className={cn(
+      "relative flex w-full cursor-default select-none items-center rounded-sm py-1.5 pl-8 pr-2 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50",
+      className
+    )}
+    data-value={value}
+    {...props}
+  >
+    {children}
+  </div>
+));
+SelectItem.displayName = "SelectItem";
+
+export { Select, SelectWithOptions, SelectTrigger, SelectValue, SelectContent, SelectItem };

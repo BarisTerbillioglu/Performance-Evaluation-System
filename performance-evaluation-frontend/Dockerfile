@@ -1,54 +1,87 @@
-# Multi-stage Dockerfile for Production
-FROM node:18-alpine AS base
+# Multi-stage Dockerfile for Production Deployment
+# Stage 1: Build stage
+FROM node:18-alpine AS builder
 
-# Install dependencies only when needed
-FROM base AS deps
-# Check https://github.com/nodejs/docker-node/tree/b4117f9333da4138b03a546ec926ef50a31506c3#nodealpine to understand why libc6-compat might be needed.
-RUN apk add --no-cache libc6-compat
+# Set working directory
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
-COPY package.json package-lock.json* ./
-RUN npm ci --only=production
+# Install dependencies for build
+RUN apk add --no-cache python3 make g++
 
-# Rebuild the source code only when needed
-FROM base AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Copy package files
+COPY package*.json ./
+
+# Install dependencies
+RUN npm ci --only=production && npm cache clean --force
+
+# Copy source code
 COPY . .
+
+# Set environment variables for production build
+ENV NODE_ENV=production
+ENV GENERATE_SOURCEMAP=false
+ENV INLINE_RUNTIME_CHUNK=false
 
 # Build the application
 RUN npm run build
 
-# Production image, copy all the files and run next
-FROM nginx:alpine AS runner
-WORKDIR /app
+# Stage 2: Production stage
+FROM nginx:alpine AS production
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+# Install security updates
+RUN apk update && apk upgrade && rm -rf /var/cache/apk/*
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
+# Create non-root user for security
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S nextjs -u 1001
 
-# Copy built application
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/public ./public
-
-# Copy nginx configuration
+# Copy custom nginx configuration
 COPY nginx.conf /etc/nginx/nginx.conf
-COPY nginx-security.conf /etc/nginx/conf.d/security.conf
+COPY security-headers.conf /etc/nginx/security-headers.conf
 
-# Set correct permissions
-RUN chown -R nextjs:nodejs /app
-RUN chmod -R 755 /app
+# Copy built application from builder stage
+COPY --from=builder /app/dist /usr/share/nginx/html
 
-# Create non-root user
+# Copy service worker and manifest
+COPY --from=builder /app/public/sw.js /usr/share/nginx/html/
+COPY --from=builder /app/public/manifest.json /usr/share/nginx/html/
+
+# Set proper permissions
+RUN chown -R nextjs:nodejs /usr/share/nginx/html && \
+    chmod -R 755 /usr/share/nginx/html && \
+    chown -R nextjs:nodejs /var/cache/nginx && \
+    chown -R nextjs:nodejs /var/log/nginx && \
+    chown -R nextjs:nodejs /etc/nginx/conf.d && \
+    touch /var/run/nginx.pid && \
+    chown -R nextjs:nodejs /var/run/nginx.pid
+
+# Switch to non-root user
 USER nextjs
 
+# Expose port
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
+  CMD curl -f http://localhost:8080/health || exit 1
+
+# Start nginx
+CMD ["nginx", "-g", "daemon off;"]
+
+# Stage 3: Development stage (optional)
+FROM node:18-alpine AS development
+
+WORKDIR /app
+
+# Install all dependencies including dev dependencies
+COPY package*.json ./
+RUN npm install
+
+# Copy source code
+COPY . .
+
+# Expose development port
 EXPOSE 3000
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
-
-# Start the application
-CMD ["nginx", "-g", "daemon off;"]
+# Start development server
+CMD ["npm", "start"]

@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { EyeIcon, EyeSlashIcon } from '@heroicons/react/24/outline';
-import { Button } from '@/components/ui/button';
-import { Input, Select } from '@/components/ui/form';
-import { Badge } from '@/components/ui/feedback';
+import { EyeIcon, EyeSlashIcon, CheckIcon, XMarkIcon } from '@heroicons/react/24/outline';
+import { Button } from '@/components/design-system/Button';
+import { Input, Select, Checkbox } from '@/components/ui/form';
+import { Badge } from '@/components/design-system/Badge';
+import { Card } from '@/components/design-system/Card';
 import { useUIStore } from '@/stores';
 import { userService } from '@/services/userService';
 import { departmentService } from '@/services/departmentService';
@@ -54,6 +55,26 @@ interface UserFormModalProps {
   onSuccess?: () => void;
 }
 
+// Password strength checker
+const checkPasswordStrength = (password: string) => {
+  const checks = {
+    length: password.length >= 8,
+    uppercase: /[A-Z]/.test(password),
+    lowercase: /[a-z]/.test(password),
+    number: /\d/.test(password),
+    special: /[!@#$%^&*(),.?":{}|<>]/.test(password)
+  };
+  
+  const score = Object.values(checks).filter(Boolean).length;
+  
+  return {
+    score,
+    checks,
+    strength: score < 2 ? 'weak' : score < 4 ? 'medium' : 'strong',
+    color: score < 2 ? 'error' : score < 4 ? 'warning' : 'success'
+  };
+};
+
 export const UserFormModal: React.FC<UserFormModalProps> = ({ user, onSuccess }) => {
   const { hideModal, showNotification } = useUIStore();
   const [loading, setLoading] = useState(false);
@@ -62,6 +83,8 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ user, onSuccess })
   const [departments, setDepartments] = useState<DepartmentDto[]>([]);
   const [roles, setRoles] = useState<RoleDto[]>([]);
   const [selectedRoles, setSelectedRoles] = useState<number[]>([]);
+  const [emailChecking, setEmailChecking] = useState(false);
+  const [emailUnique, setEmailUnique] = useState<boolean | null>(null);
 
   const isEdit = !!user;
   const schema = isEdit ? updateUserSchema : createUserSchema;
@@ -71,7 +94,9 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ user, onSuccess })
     handleSubmit,
     formState: { errors, isValid },
     reset,
-
+    watch,
+    setValue,
+    trigger
   } = useForm<CreateUserFormData | UpdateUserFormData>({
     resolver: zodResolver(schema),
     mode: 'onChange',
@@ -98,18 +123,59 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ user, onSuccess })
     }
   });
 
+  const watchedEmail = watch('email');
+  const watchedPassword = watch('password');
+
+  // Check email uniqueness
+  useEffect(() => {
+    const checkEmail = async () => {
+      if (watchedEmail && watchedEmail.includes('@')) {
+        setEmailChecking(true);
+        try {
+          const result = await userService.checkEmailUniqueness(watchedEmail, isEdit ? user.id : undefined);
+          setEmailUnique(result.isUnique);
+        } catch (error) {
+          setEmailUnique(null);
+        } finally {
+          setEmailChecking(false);
+        }
+      } else {
+        setEmailUnique(null);
+      }
+    };
+
+    const timeoutId = setTimeout(checkEmail, 500);
+    return () => clearTimeout(timeoutId);
+  }, [watchedEmail, isEdit, user?.id]);
+
   // Load departments and roles
   useEffect(() => {
     loadDepartments();
     loadRoles();
   }, []);
 
-  // Load user details for edit mode
+  // Set department when departments load
   useEffect(() => {
-    if (isEdit && user) {
-      loadUserDetails();
+    if (departments.length > 0 && isEdit && user) {
+      // Find user's department
+      const userDept = departments.find(dept => dept.name === user.departmentName);
+      if (userDept) {
+        setValue('departmentId', userDept.id);
+      }
     }
-  }, [isEdit, user]);
+  }, [departments, isEdit, user, setValue]);
+
+  // Set roles when roles load
+  useEffect(() => {
+    if (roles.length > 0 && isEdit && user) {
+      // Find user's roles
+      const userRoleIds = roles
+        .filter(role => user.roles.includes(role.name))
+        .map(role => role.id);
+      setSelectedRoles(userRoleIds);
+      setValue('roleIds', userRoleIds);
+    }
+  }, [roles, isEdit, user, setValue]);
 
   const loadDepartments = async () => {
     try {
@@ -139,353 +205,369 @@ export const UserFormModal: React.FC<UserFormModalProps> = ({ user, onSuccess })
     }
   };
 
-  const loadUserDetails = async () => {
-    if (!user) return;
-    
-    try {
-      const userDetails = await userService.getUserById(user.id);
-      const userRoleIds = userDetails.roles.map(r => r.roleId);
-      setSelectedRoles(userRoleIds);
-      
-      reset({
-        firstName: userDetails.firstName,
-        lastName: userDetails.lastName,
-        email: userDetails.email,
-        departmentId: userDetails.departmentId,
-        phoneNumber: userDetails.phoneNumber || '',
-        jobTitle: userDetails.jobTitle || '',
-        roleIds: userRoleIds,
-        isActive: userDetails.isActive
-      });
-    } catch (error) {
-      console.error('Failed to load user details:', error);
-      showNotification({
-        type: 'error',
-        title: 'Error',
-        message: 'Failed to load user details'
-      });
-    }
-  };
-
   const handleRoleToggle = (roleId: number) => {
     const newSelectedRoles = selectedRoles.includes(roleId)
       ? selectedRoles.filter(id => id !== roleId)
       : [...selectedRoles, roleId];
     
     setSelectedRoles(newSelectedRoles);
+    setValue('roleIds', newSelectedRoles);
+    trigger('roleIds');
   };
 
   const onSubmit = async (data: CreateUserFormData | UpdateUserFormData) => {
+    if (!emailUnique) {
+      showNotification({
+        type: 'error',
+        title: 'Error',
+        message: 'Email address is already in use'
+      });
+      return;
+    }
+
     try {
       setLoading(true);
-
-      if (isEdit && user) {
-        const updateData: UpdateUserRequest = {
-          firstName: data.firstName,
-          lastName: data.lastName,
-          email: data.email,
-          departmentId: data.departmentId,
-          phoneNumber: data.phoneNumber || undefined,
-          jobTitle: data.jobTitle || undefined,
-          isActive: data.isActive
-        };
-
+      
+      if (isEdit) {
+        const updateData = data as UpdateUserFormData;
         await userService.updateUser(user.id, updateData);
-        
-        // Update roles separately if needed
-        // This would require a separate role assignment API
-        
       } else {
         const createData = data as CreateUserFormData;
-        const newUser: CreateUserRequest = {
-          firstName: createData.firstName,
-          lastName: createData.lastName,
-          email: createData.email,
-          passwordHash: createData.password, // This should be hashed on the backend
-          departmentId: createData.departmentId
-        };
-
-        await userService.createUser(newUser);
-        
-        // Assign roles separately if needed
-        // This would require a separate role assignment API
+        await userService.createUser({
+          ...createData,
+          passwordHash: createData.password // Backend will hash this
+        });
       }
-
-      hideModal('add-user');
-      hideModal('edit-user');
+      
       onSuccess?.();
-
-    } catch (error: any) {
+      hideModal();
+    } catch (error) {
       console.error('Failed to save user:', error);
       showNotification({
         type: 'error',
         title: 'Error',
-        message: error.response?.data?.message || `Failed to ${isEdit ? 'update' : 'create'} user`
+        message: isEdit ? 'Failed to update user' : 'Failed to create user'
       });
     } finally {
       setLoading(false);
     }
   };
 
-  const handleCancel = () => {
-    hideModal('add-user');
-    hideModal('edit-user');
-  };
+  const passwordStrength = checkPasswordStrength(watchedPassword || '');
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-      {/* Basic Information */}
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Basic Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Controller
-            name="firstName"
-            control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                label="First Name"
-                placeholder="Enter first name"
-                error={errors.firstName?.message}
-                required
+    <div className="space-y-6">
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* Basic Information */}
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Basic Information</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                First Name *
+              </label>
+              <Controller
+                name="firstName"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    placeholder="Enter first name"
+                    error={errors.firstName?.message}
+                    className="w-full"
+                  />
+                )}
               />
-            )}
-          />
-          
-          <Controller
-            name="lastName"
-            control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                label="Last Name"
-                placeholder="Enter last name"
-                error={errors.lastName?.message}
-                required
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Last Name *
+              </label>
+              <Controller
+                name="lastName"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    placeholder="Enter last name"
+                    error={errors.lastName?.message}
+                    className="w-full"
+                  />
+                )}
               />
-            )}
-          />
-          
-          <Controller
-            name="email"
-            control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                type="email"
-                label="Email Address"
-                placeholder="Enter email address"
-                error={errors.email?.message}
-                required
-              />
-            )}
-          />
-          
-          <Controller
-            name="departmentId"
-            control={control}
-            render={({ field }) => (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Department <span className="text-red-500">*</span>
-                </label>
-                <Select
-                  value={field.value?.toString() || ''}
-                  onChange={(value) => field.onChange(parseInt(value.toString()))}
-                  options={[
-                    { value: '', label: 'Select Department' },
-                    ...departments.map(dept => ({
-                      value: dept.id.toString(),
-                      label: dept.name,
-                    }))
-                  ]}
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address *
+              </label>
+              <div className="relative">
+                <Controller
+                  name="email"
+                  control={control}
+                  render={({ field }) => (
+                    <Input
+                      {...field}
+                      type="email"
+                      placeholder="Enter email address"
+                      error={errors.email?.message}
+                      className="w-full pr-10"
+                    />
+                  )}
                 />
-                {errors.departmentId && (
-                  <p className="mt-1 text-sm text-red-600">{errors.departmentId.message}</p>
+                {emailChecking && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-primary-600 border-t-transparent"></div>
+                  </div>
+                )}
+                {!emailChecking && emailUnique !== null && (
+                  <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                    {emailUnique ? (
+                      <CheckIcon className="h-4 w-4 text-success-600" />
+                    ) : (
+                      <XMarkIcon className="h-4 w-4 text-error-600" />
+                    )}
+                  </div>
                 )}
               </div>
-            )}
-          />
-        </div>
-      </div>
-
-      {/* Contact Information */}
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Contact Information</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Controller
-            name="phoneNumber"
-            control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                label="Phone Number"
-                placeholder="Enter phone number"
-                error={errors.phoneNumber?.message}
-              />
-            )}
-          />
-          
-          <Controller
-            name="jobTitle"
-            control={control}
-            render={({ field }) => (
-              <Input
-                {...field}
-                label="Job Title"
-                placeholder="Enter job title"
-                error={errors.jobTitle?.message}
-              />
-            )}
-          />
-        </div>
-      </div>
-
-      {/* Password (Create mode only) */}
-      {!isEdit && (
-        <div>
-          <h3 className="text-lg font-medium text-gray-900 mb-4">Security</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Controller
-              name="password"
-              control={control}
-              render={({ field }) => (
-                <div className="relative">
+              {!emailUnique && watchedEmail && (
+                <p className="mt-1 text-sm text-error-600">This email address is already in use</p>
+              )}
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Job Title
+              </label>
+              <Controller
+                name="jobTitle"
+                control={control}
+                render={({ field }) => (
                   <Input
                     {...field}
-                    type={showPassword ? 'text' : 'password'}
-                    label="Password"
-                    placeholder="Enter password"
-                    error={(errors as any).password?.message}
-                    required
+                    placeholder="Enter job title"
+                    className="w-full"
+                  />
+                )}
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Phone Number
+              </label>
+              <Controller
+                name="phoneNumber"
+                control={control}
+                render={({ field }) => (
+                  <Input
+                    {...field}
+                    placeholder="Enter phone number"
+                    className="w-full"
+                  />
+                )}
+              />
+            </div>
+          </div>
+        </Card>
+
+        {/* Password Section (only for new users) */}
+        {!isEdit && (
+          <Card className="p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">Password</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Password *
+                </label>
+                <div className="relative">
+                  <Controller
+                    name="password"
+                    control={control}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        type={showPassword ? 'text' : 'password'}
+                        placeholder="Enter password"
+                        error={errors.password?.message}
+                        className="w-full pr-10"
+                      />
+                    )}
                   />
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
                     onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
                     {showPassword ? (
-                      <EyeSlashIcon className="h-4 w-4 text-gray-400" />
+                      <EyeSlashIcon className="h-4 w-4" />
                     ) : (
-                      <EyeIcon className="h-4 w-4 text-gray-400" />
+                      <EyeIcon className="h-4 w-4" />
                     )}
                   </button>
                 </div>
-              )}
-            />
-            
-            <Controller
-              name="confirmPassword"
-              control={control}
-              render={({ field }) => (
+                
+                {/* Password Strength Indicator */}
+                {watchedPassword && (
+                  <div className="mt-2">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <span className="text-xs text-gray-500">Password strength:</span>
+                      <Badge variant={passwordStrength.color} size="sm">
+                        {passwordStrength.strength}
+                      </Badge>
+                    </div>
+                    <div className="space-y-1">
+                      {Object.entries(passwordStrength.checks).map(([check, passed]) => (
+                        <div key={check} className="flex items-center space-x-2">
+                          {passed ? (
+                            <CheckIcon className="h-3 w-3 text-success-600" />
+                          ) : (
+                            <XMarkIcon className="h-3 w-3 text-gray-400" />
+                          )}
+                          <span className={`text-xs ${passed ? 'text-success-600' : 'text-gray-500'}`}>
+                            {check === 'length' && 'At least 8 characters'}
+                            {check === 'uppercase' && 'Contains uppercase letter'}
+                            {check === 'lowercase' && 'Contains lowercase letter'}
+                            {check === 'number' && 'Contains number'}
+                            {check === 'special' && 'Contains special character'}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Confirm Password *
+                </label>
                 <div className="relative">
-                  <Input
-                    {...field}
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    label="Confirm Password"
-                    placeholder="Confirm password"
-                    error={(errors as any).confirmPassword?.message}
-                    required
+                  <Controller
+                    name="confirmPassword"
+                    control={control}
+                    render={({ field }) => (
+                      <Input
+                        {...field}
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        placeholder="Confirm password"
+                        error={errors.confirmPassword?.message}
+                        className="w-full pr-10"
+                      />
+                    )}
                   />
                   <button
                     type="button"
-                    className="absolute inset-y-0 right-0 pr-3 flex items-center"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
                   >
                     {showConfirmPassword ? (
-                      <EyeSlashIcon className="h-4 w-4 text-gray-400" />
+                      <EyeSlashIcon className="h-4 w-4" />
                     ) : (
-                      <EyeIcon className="h-4 w-4 text-gray-400" />
+                      <EyeIcon className="h-4 w-4" />
                     )}
                   </button>
                 </div>
+              </div>
+            </div>
+          </Card>
+        )}
+
+        {/* Department and Roles */}
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Department & Roles</h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Department *
+              </label>
+              <Controller
+                name="departmentId"
+                control={control}
+                render={({ field }) => (
+                  <Select
+                    value={field.value?.toString() || ''}
+                    onChange={(value) => field.onChange(value ? parseInt(value) : 0)}
+                    options={[
+                      { value: '', label: 'Select department' },
+                      ...departments.map(dept => ({ value: dept.id.toString(), label: dept.name }))
+                    ]}
+                    error={errors.departmentId?.message}
+                    className="w-full"
+                  />
+                )}
+              />
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Roles *
+              </label>
+              <div className="space-y-2">
+                {roles.map((role) => (
+                  <div key={role.id} className="flex items-center">
+                    <Checkbox
+                      checked={selectedRoles.includes(role.id)}
+                      onChange={() => handleRoleToggle(role.id)}
+                      id={`role-${role.id}`}
+                    />
+                    <label htmlFor={`role-${role.id}`} className="ml-2 text-sm text-gray-700">
+                      {role.name}
+                    </label>
+                  </div>
+                ))}
+              </div>
+              {errors.roleIds && (
+                <p className="mt-1 text-sm text-error-600">{errors.roleIds.message}</p>
+              )}
+            </div>
+          </div>
+        </Card>
+
+        {/* Status */}
+        <Card className="p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Status</h3>
+          <div className="flex items-center">
+            <Controller
+              name="isActive"
+              control={control}
+              render={({ field }) => (
+                <Checkbox
+                  checked={field.value}
+                  onChange={(checked) => field.onChange(checked)}
+                  id="isActive"
+                />
               )}
             />
-          </div>
-        </div>
-      )}
-
-      {/* Role Assignment */}
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Role Assignment</h3>
-        <div className="space-y-2">
-          <label className="block text-sm font-medium text-gray-700">
-            Roles <span className="text-red-500">*</span>
-          </label>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-40 overflow-y-auto border border-gray-200 rounded-md p-3">
-            {roles.map(role => (
-              <label key={role.id} className="flex items-center space-x-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={selectedRoles.includes(role.id)}
-                  onChange={() => handleRoleToggle(role.id)}
-                  className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-                />
-                <span className="text-sm text-gray-700">{role.name}</span>
-                {role.description && (
-                  <span className="text-xs text-gray-500">({role.description})</span>
-                )}
-              </label>
-            ))}
-          </div>
-          {selectedRoles.length === 0 && (
-            <p className="text-sm text-red-600">At least one role is required</p>
-          )}
-          {selectedRoles.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-2">
-              {selectedRoles.map(roleId => {
-                const role = roles.find(r => r.id === roleId);
-                return role ? (
-                  <Badge key={roleId} variant="default" size="sm">
-                    {role.name}
-                  </Badge>
-                ) : null;
-              })}
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Status */}
-      <div>
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Status</h3>
-        <Controller
-          name="isActive"
-          control={control}
-          render={({ field }) => (
-            <label className="flex items-center space-x-2 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={field.value}
-                onChange={field.onChange}
-                className="rounded border-gray-300 text-primary-600 focus:ring-primary-500"
-              />
-              <span className="text-sm text-gray-700">Active User</span>
-              <span className="text-xs text-gray-500">
-                (Inactive users cannot log in to the system)
-              </span>
+            <label htmlFor="isActive" className="ml-2 text-sm text-gray-700">
+              Active account
             </label>
-          )}
-        />
-      </div>
+          </div>
+          <p className="mt-1 text-xs text-gray-500">
+            Inactive users cannot log in to the system
+          </p>
+        </Card>
 
-      {/* Actions */}
-      <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
-        <Button
-          type="button"
-          variant="outline"
-          onClick={handleCancel}
-          disabled={loading}
-        >
-          Cancel
-        </Button>
-        <Button
-          type="submit"
-          disabled={loading || !isValid || selectedRoles.length === 0}
-        >
-          {loading ? 'Saving...' : (isEdit ? 'Update User' : 'Create User')}
-        </Button>
-      </div>
-    </form>
+        {/* Form Actions */}
+        <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+          <Button
+            type="button"
+            variant="secondary"
+            onClick={() => hideModal()}
+            disabled={loading}
+          >
+            Cancel
+          </Button>
+          <Button
+            type="submit"
+            loading={loading}
+            disabled={!isValid || !emailUnique}
+          >
+            {isEdit ? 'Update User' : 'Create User'}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 };

@@ -1,10 +1,8 @@
 import { apiClient } from './api';
-import {
-  DepartmentDto,
-  DepartmentWithUsersDto,
-  DepartmentStatsDto,
-  CreateDepartmentRequest,
-  UpdateDepartmentRequest,
+import { 
+  DepartmentDto, 
+  CreateDepartmentRequest, 
+  UpdateDepartmentRequest 
 } from '@/types';
 
 export const departmentService = {
@@ -23,31 +21,17 @@ export const departmentService = {
   },
 
   /**
-   * Get department with users
-   */
-  getDepartmentWithUsers: async (id: number): Promise<DepartmentWithUsersDto> => {
-    return await apiClient.get<DepartmentWithUsersDto>(`/api/department/${id}/with-users`);
-  },
-
-  /**
-   * Get all departments with users
-   */
-  getDepartmentsWithUsers: async (): Promise<DepartmentWithUsersDto[]> => {
-    return await apiClient.get<DepartmentWithUsersDto[]>('/api/department/with-users');
-  },
-
-  /**
    * Create new department
    */
-  createDepartment: async (department: CreateDepartmentRequest): Promise<DepartmentDto> => {
-    return await apiClient.post<DepartmentDto>('/api/department', department);
+  createDepartment: async (departmentData: CreateDepartmentRequest): Promise<DepartmentDto> => {
+    return await apiClient.post<DepartmentDto>('/api/department', departmentData);
   },
 
   /**
    * Update department
    */
-  updateDepartment: async (id: number, department: UpdateDepartmentRequest): Promise<DepartmentDto> => {
-    return await apiClient.put<DepartmentDto>(`/api/department/${id}`, department);
+  updateDepartment: async (id: number, departmentData: UpdateDepartmentRequest): Promise<DepartmentDto> => {
+    return await apiClient.put<DepartmentDto>(`/api/department/${id}`, departmentData);
   },
 
   /**
@@ -58,37 +42,9 @@ export const departmentService = {
   },
 
   /**
-   * Get department statistics
+   * Get department with users (alias for getDepartmentById)
    */
-  getDepartmentStats: async (id: number): Promise<DepartmentStatsDto> => {
-    return await apiClient.get<DepartmentStatsDto>(`/api/department/${id}/stats`);
-  },
-
-  /**
-   * Get all departments statistics
-   */
-  getAllDepartmentStats: async (): Promise<DepartmentStatsDto[]> => {
-    return await apiClient.get<DepartmentStatsDto[]>('/api/department/stats');
-  },
-
-  /**
-   * Get active departments
-   */
-  getActiveDepartments: async (): Promise<DepartmentDto[]> => {
-    return await apiClient.get<DepartmentDto[]>('/api/department/active');
-  },
-
-  /**
-   * Activate department
-   */
-  activateDepartment: async (id: number): Promise<{ message: string }> => {
-    return await apiClient.put<{ message: string }>(`/api/department/${id}/activate`);
-  },
-
-  /**
-   * Deactivate department
-   */
-  deactivateDepartment: async (id: number): Promise<{ message: string }> => {
-    return await apiClient.put<{ message: string }>(`/api/department/${id}/deactivate`);
+  getDepartmentWithUsers: async (id: number): Promise<DepartmentDto> => {
+    return await apiClient.get<DepartmentDto>(`/api/department/${id}`);
   },
 };

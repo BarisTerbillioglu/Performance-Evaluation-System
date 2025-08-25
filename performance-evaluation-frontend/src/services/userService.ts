@@ -1,26 +1,33 @@
 import { apiClient } from './api';
-import {
-  UserDto,
-  UserListDto,
-  UserWithDetailsDto,
-  UserSummaryDto,
-  CreateUserRequest,
-  UpdateUserRequest,
-  ChangePasswordRequest,
+import { 
+  UserDto, 
   UserSearchDto,
   UserSearchRequest,
-  EmployeeListDto,
-  EvaluatorListDto,
-  BaseSearchRequest,
-  PaginatedResponse,
+  UserWithDetailsDto,
+  CreateUserRequest, 
+  UpdateUserRequest, 
+  PagedResult 
 } from '@/types';
 
 export const userService = {
   /**
-   * Get all users with role-based filtering
+   * Get all users with pagination and filters
    */
-  getUsers: async (): Promise<UserListDto[]> => {
-    return await apiClient.get<UserListDto[]>('/api/user');
+  getUsers: async (params?: {
+    page?: number;
+    pageSize?: number;
+    search?: string;
+    department?: string;
+    role?: string;
+  }): Promise<PagedResult<UserDto>> => {
+    return await apiClient.get<PagedResult<UserDto>>('/api/user', params);
+  },
+
+  /**
+   * Search users with advanced filters
+   */
+  searchUsers: async (searchRequest: UserSearchRequest): Promise<PagedResult<UserSearchDto[]>> => {
+    return await apiClient.post<PagedResult<UserSearchDto[]>>('/api/user/search', searchRequest);
   },
 
   /**
@@ -33,15 +40,15 @@ export const userService = {
   /**
    * Create new user
    */
-  createUser: async (user: CreateUserRequest): Promise<UserDto> => {
-    return await apiClient.post<UserDto>('/api/user', user);
+  createUser: async (userData: CreateUserRequest): Promise<UserDto> => {
+    return await apiClient.post<UserDto>('/api/user', userData);
   },
 
   /**
    * Update user
    */
-  updateUser: async (id: number, user: UpdateUserRequest): Promise<UserDto> => {
-    return await apiClient.put<UserDto>(`/api/user/${id}`, user);
+  updateUser: async (id: number, userData: UpdateUserRequest): Promise<UserDto> => {
+    return await apiClient.put<UserDto>(`/api/user/${id}`, userData);
   },
 
   /**
@@ -49,41 +56,6 @@ export const userService = {
    */
   deleteUser: async (id: number): Promise<{ message: string }> => {
     return await apiClient.delete<{ message: string }>(`/api/user/${id}`);
-  },
-
-  /**
-   * Change user password
-   */
-  changePassword: async (id: number, request: ChangePasswordRequest): Promise<{ message: string }> => {
-    return await apiClient.put<{ message: string }>(`/api/user/${id}/change-password`, request);
-  },
-
-  /**
-   * Search users
-   */
-  searchUsers: async (request: UserSearchRequest): Promise<PaginatedResponse<UserSearchDto>> => {
-    return await apiClient.post<PaginatedResponse<UserSearchDto>>('/api/user/search', request);
-  },
-
-  /**
-   * Get users summary
-   */
-  getUsersSummary: async (): Promise<UserSummaryDto[]> => {
-    return await apiClient.get<UserSummaryDto[]>('/api/user/summary');
-  },
-
-  /**
-   * Get employees list
-   */
-  getEmployees: async (request?: BaseSearchRequest): Promise<EmployeeListDto[]> => {
-    return await apiClient.get<EmployeeListDto[]>('/api/user/employees', request);
-  },
-
-  /**
-   * Get evaluators list
-   */
-  getEvaluators: async (request?: BaseSearchRequest): Promise<EvaluatorListDto[]> => {
-    return await apiClient.get<EvaluatorListDto[]>('/api/user/evaluators', request);
   },
 
   /**
@@ -101,11 +73,100 @@ export const userService = {
   },
 
   /**
-   * Upload user profile picture
+   * Bulk activate users
    */
-  uploadProfilePicture: async (id: number, file: File): Promise<{ message: string; profilePictureUrl: string }> => {
+  bulkActivateUsers: async (userIds: number[]): Promise<{ message: string }> => {
+    return await apiClient.put<{ message: string }>('/api/user/bulk/activate', { userIds });
+  },
+
+  /**
+   * Bulk deactivate users
+   */
+  bulkDeactivateUsers: async (userIds: number[]): Promise<{ message: string }> => {
+    return await apiClient.put<{ message: string }>('/api/user/bulk/deactivate', { userIds });
+  },
+
+  /**
+   * Bulk delete users
+   */
+  bulkDeleteUsers: async (userIds: number[]): Promise<{ message: string }> => {
+    return await apiClient.delete<{ message: string }>('/api/user/bulk', { data: { userIds } });
+  },
+
+  /**
+   * Bulk assign roles
+   */
+  bulkAssignRoles: async (userIds: number[], roleIds: number[]): Promise<{ message: string }> => {
+    return await apiClient.put<{ message: string }>('/api/user/bulk/roles', { userIds, roleIds });
+  },
+
+  /**
+   * Bulk assign departments
+   */
+  bulkAssignDepartments: async (userIds: number[], departmentId: number): Promise<{ message: string }> => {
+    return await apiClient.put<{ message: string }>('/api/user/bulk/departments', { userIds, departmentId });
+  },
+
+  /**
+   * Import users from CSV
+   */
+  importUsers: async (file: File): Promise<{ message: string; importedCount: number; errors: string[] }> => {
     const formData = new FormData();
     formData.append('file', file);
-    return await apiClient.upload<{ message: string; profilePictureUrl: string }>(`/api/user/${id}/profile-picture`, formData);
+    return await apiClient.post<{ message: string; importedCount: number; errors: string[] }>('/api/user/import', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+  },
+
+  /**
+   * Export users to CSV
+   */
+  exportUsers: async (filters?: UserSearchRequest): Promise<Blob> => {
+    return await apiClient.get<Blob>('/api/user/export', filters, {
+      responseType: 'blob',
+    });
+  },
+
+  /**
+   * Get all evaluators
+   */
+  getEvaluators: async (): Promise<UserDto[]> => {
+    return await apiClient.get<UserDto[]>('/api/user/evaluators');
+  },
+
+  /**
+   * Get all employees
+   */
+  getEmployees: async (): Promise<UserDto[]> => {
+    return await apiClient.get<UserDto[]>('/api/user/employees');
+  },
+
+  /**
+   * Get employees in specific department
+   */
+  getEmployeesByDepartment: async (departmentId: number): Promise<UserDto[]> => {
+    return await apiClient.get<UserDto[]>(`/api/user/departments/${departmentId}/employees`);
+  },
+
+  /**
+   * Check email uniqueness
+   */
+  checkEmailUniqueness: async (email: string, excludeUserId?: number): Promise<{ isUnique: boolean }> => {
+    return await apiClient.get<{ isUnique: boolean }>('/api/user/check-email', { email, excludeUserId });
+  },
+
+  /**
+   * Get user statistics
+   */
+  getUserStatistics: async (): Promise<{
+    totalUsers: number;
+    activeUsers: number;
+    inactiveUsers: number;
+    usersByDepartment: { departmentName: string; count: number }[];
+    usersByRole: { roleName: string; count: number }[];
+  }> => {
+    return await apiClient.get('/api/user/statistics');
   },
 };

@@ -30,19 +30,19 @@ export const useCriteriaStore = create<CriteriaStore>()(
         ...initialState,
 
         // Criteria management
-        fetchCriteria: async (filters = {}) => {
+        fetchCriteria: async (filters: any = {}) => {
           try {
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.isLoading = true;
               state.error = null;
             });
 
             useUIStore.getState().setLoading('fetchCriteria', true);
 
-            const criteria = await criteriaService.getCriteria();
+            const response = await criteriaService.getCriteria();
 
-            set((state) => {
-              state.criteria = criteria;
+            set((state: CriteriaStore) => {
+              state.criteria = response.data;
               state.isLoading = false;
               state.lastFetch.criteria = Date.now();
             });
@@ -50,7 +50,7 @@ export const useCriteriaStore = create<CriteriaStore>()(
             useUIStore.getState().setLoading('fetchCriteria', false);
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to fetch criteria';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
               state.isLoading = false;
             });
@@ -62,21 +62,21 @@ export const useCriteriaStore = create<CriteriaStore>()(
 
         fetchCriteriaById: async (id: number) => {
           try {
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.isLoading = true;
               state.error = null;
             });
 
             const criteria = await criteriaService.getCriteriaById(id);
 
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.currentCriteria = criteria;
               state.isLoading = false;
               state.lastFetch[`criteria-${id}`] = Date.now();
             });
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to fetch criteria';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
               state.isLoading = false;
             });
@@ -89,10 +89,10 @@ export const useCriteriaStore = create<CriteriaStore>()(
           try {
             const criteria = await criteriaService.getCriteriaByCategory(categoryId);
 
-            set((state) => {
+            set((state: CriteriaStore) => {
               // Update criteria for this category
               state.criteria = [
-                ...state.criteria.filter(c => c.categoryId !== categoryId),
+                ...state.criteria.filter((c: CriteriaDto) => c.categoryId !== categoryId),
                 ...criteria
               ];
               state.lastFetch[`criteria-category-${categoryId}`] = Date.now();
@@ -107,9 +107,9 @@ export const useCriteriaStore = create<CriteriaStore>()(
           }
         },
 
-        createCriteria: async (data) => {
+        createCriteria: async (data: CreateCriteriaRequest) => {
           try {
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.isCreating = true;
               state.error = null;
             });
@@ -118,7 +118,7 @@ export const useCriteriaStore = create<CriteriaStore>()(
 
             const newCriteria = await criteriaService.createCriteria(data);
 
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.isCreating = false;
               // Invalidate criteria cache
               delete state.lastFetch.criteria;
@@ -133,7 +133,7 @@ export const useCriteriaStore = create<CriteriaStore>()(
             return newCriteria;
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to create criteria';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
               state.isCreating = false;
             });
@@ -143,9 +143,9 @@ export const useCriteriaStore = create<CriteriaStore>()(
           }
         },
 
-        updateCriteria: async (id: number, data) => {
+        updateCriteria: async (id: number, data: UpdateCriteriaRequest) => {
           try {
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.isUpdating = true;
               state.error = null;
             });
@@ -154,7 +154,7 @@ export const useCriteriaStore = create<CriteriaStore>()(
 
             await criteriaService.updateCriteria(id, data);
 
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.isUpdating = false;
               // Invalidate cache
               delete state.lastFetch.criteria;
@@ -171,7 +171,7 @@ export const useCriteriaStore = create<CriteriaStore>()(
             }
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to update criteria';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
               state.isUpdating = false;
             });
@@ -185,13 +185,13 @@ export const useCriteriaStore = create<CriteriaStore>()(
           try {
             // Optimistic update
             const previousCriteria = get().criteria;
-            set((state) => {
-              state.criteria = state.criteria.filter(c => c.id !== id);
+            set((state: CriteriaStore) => {
+              state.criteria = state.criteria.filter((c: CriteriaDto) => c.id !== id);
             });
 
             await criteriaService.deleteCriteria(id);
 
-            set((state) => {
+            set((state: CriteriaStore) => {
               // Clear related data
               if (state.currentCriteria?.id === id) {
                 state.currentCriteria = null;
@@ -203,12 +203,12 @@ export const useCriteriaStore = create<CriteriaStore>()(
             useUIStore.getState().showSuccess('Criteria deleted successfully');
           } catch (error) {
             // Revert optimistic update
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.criteria = previousCriteria;
             });
 
             const errorMessage = error instanceof Error ? error.message : 'Failed to delete criteria';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to delete criteria', errorMessage);
@@ -219,8 +219,8 @@ export const useCriteriaStore = create<CriteriaStore>()(
         activateCriteria: async (id: number) => {
           try {
             // Optimistic update
-            set((state) => {
-              const criteria = state.criteria.find(c => c.id === id);
+            set((state: CriteriaStore) => {
+              const criteria = state.criteria.find((c: CriteriaDto) => c.id === id);
               if (criteria) {
                 criteria.isActive = true;
               }
@@ -231,15 +231,15 @@ export const useCriteriaStore = create<CriteriaStore>()(
             useUIStore.getState().showSuccess('Criteria activated successfully');
           } catch (error) {
             // Revert optimistic update
-            set((state) => {
-              const criteria = state.criteria.find(c => c.id === id);
+            set((state: CriteriaStore) => {
+              const criteria = state.criteria.find((c: CriteriaDto) => c.id === id);
               if (criteria) {
                 criteria.isActive = false;
               }
             });
 
             const errorMessage = error instanceof Error ? error.message : 'Failed to activate criteria';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to activate criteria', errorMessage);
@@ -250,8 +250,8 @@ export const useCriteriaStore = create<CriteriaStore>()(
         deactivateCriteria: async (id: number) => {
           try {
             // Optimistic update
-            set((state) => {
-              const criteria = state.criteria.find(c => c.id === id);
+            set((state: CriteriaStore) => {
+              const criteria = state.criteria.find((c: CriteriaDto) => c.id === id);
               if (criteria) {
                 criteria.isActive = false;
               }
@@ -262,15 +262,15 @@ export const useCriteriaStore = create<CriteriaStore>()(
             useUIStore.getState().showSuccess('Criteria deactivated successfully');
           } catch (error) {
             // Revert optimistic update
-            set((state) => {
-              const criteria = state.criteria.find(c => c.id === id);
+            set((state: CriteriaStore) => {
+              const criteria = state.criteria.find((c: CriteriaDto) => c.id === id);
               if (criteria) {
                 criteria.isActive = true;
               }
             });
 
             const errorMessage = error instanceof Error ? error.message : 'Failed to deactivate criteria';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to deactivate criteria', errorMessage);
@@ -281,21 +281,21 @@ export const useCriteriaStore = create<CriteriaStore>()(
         // Category management
         fetchCategories: async () => {
           try {
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.isLoading = true;
               state.error = null;
             });
 
-            const categories = await criteriaCategoryService.getCategories();
+            const response = await criteriaCategoryService.getCategories();
 
-            set((state) => {
-              state.categories = categories;
+            set((state: CriteriaStore) => {
+              state.categories = response.data;
               state.isLoading = false;
               state.lastFetch.categories = Date.now();
             });
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to fetch categories';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
               state.isLoading = false;
             });
@@ -308,13 +308,13 @@ export const useCriteriaStore = create<CriteriaStore>()(
           try {
             const category = await criteriaCategoryService.getCategoryWithCriteria(id);
 
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.currentCategory = category;
               state.lastFetch[`category-${id}`] = Date.now();
             });
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to fetch category';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to load category', errorMessage);
@@ -322,16 +322,16 @@ export const useCriteriaStore = create<CriteriaStore>()(
           }
         },
 
-        createCategory: async (data) => {
+        createCategory: async (data: CreateCriteriaCategoryRequest) => {
           try {
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.isCreating = true;
               state.error = null;
             });
 
             const newCategory = await criteriaCategoryService.createCategory(data);
 
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.isCreating = false;
               // Invalidate categories cache
               delete state.lastFetch.categories;
@@ -345,7 +345,7 @@ export const useCriteriaStore = create<CriteriaStore>()(
             return newCategory;
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to create category';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
               state.isCreating = false;
             });
@@ -354,16 +354,16 @@ export const useCriteriaStore = create<CriteriaStore>()(
           }
         },
 
-        updateCategory: async (id: number, data) => {
+        updateCategory: async (id: number, data: UpdateCriteriaCategoryRequest) => {
           try {
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.isUpdating = true;
               state.error = null;
             });
 
             await criteriaCategoryService.updateCategory(id, data);
 
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.isUpdating = false;
               // Invalidate cache
               delete state.lastFetch.categories;
@@ -379,7 +379,7 @@ export const useCriteriaStore = create<CriteriaStore>()(
             }
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to update category';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
               state.isUpdating = false;
             });
@@ -392,13 +392,13 @@ export const useCriteriaStore = create<CriteriaStore>()(
           try {
             // Optimistic update
             const previousCategories = get().categories;
-            set((state) => {
-              state.categories = state.categories.filter(c => c.id !== id);
+            set((state: CriteriaStore) => {
+              state.categories = state.categories.filter((c: CriteriaCategoryDto) => c.id !== id);
             });
 
             await criteriaCategoryService.deleteCategory(id);
 
-            set((state) => {
+            set((state: CriteriaStore) => {
               // Clear related data
               if (state.currentCategory?.id === id) {
                 state.currentCategory = null;
@@ -410,12 +410,12 @@ export const useCriteriaStore = create<CriteriaStore>()(
             useUIStore.getState().showSuccess('Category deleted successfully');
           } catch (error) {
             // Revert optimistic update
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.categories = previousCategories;
             });
 
             const errorMessage = error instanceof Error ? error.message : 'Failed to delete category';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to delete category', errorMessage);
@@ -426,8 +426,8 @@ export const useCriteriaStore = create<CriteriaStore>()(
         activateCategory: async (id: number) => {
           try {
             // Optimistic update
-            set((state) => {
-              const category = state.categories.find(c => c.id === id);
+            set((state: CriteriaStore) => {
+              const category = state.categories.find((c: CriteriaCategoryDto) => c.id === id);
               if (category) {
                 category.isActive = true;
               }
@@ -438,15 +438,15 @@ export const useCriteriaStore = create<CriteriaStore>()(
             useUIStore.getState().showSuccess('Category activated successfully');
           } catch (error) {
             // Revert optimistic update
-            set((state) => {
-              const category = state.categories.find(c => c.id === id);
+            set((state: CriteriaStore) => {
+              const category = state.categories.find((c: CriteriaCategoryDto) => c.id === id);
               if (category) {
                 category.isActive = false;
               }
             });
 
             const errorMessage = error instanceof Error ? error.message : 'Failed to activate category';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to activate category', errorMessage);
@@ -457,8 +457,8 @@ export const useCriteriaStore = create<CriteriaStore>()(
         deactivateCategory: async (id: number) => {
           try {
             // Optimistic update
-            set((state) => {
-              const category = state.categories.find(c => c.id === id);
+            set((state: CriteriaStore) => {
+              const category = state.categories.find((c: CriteriaCategoryDto) => c.id === id);
               if (category) {
                 category.isActive = false;
               }
@@ -469,15 +469,15 @@ export const useCriteriaStore = create<CriteriaStore>()(
             useUIStore.getState().showSuccess('Category deactivated successfully');
           } catch (error) {
             // Revert optimistic update
-            set((state) => {
-              const category = state.categories.find(c => c.id === id);
+            set((state: CriteriaStore) => {
+              const category = state.categories.find((c: CriteriaCategoryDto) => c.id === id);
               if (category) {
                 category.isActive = true;
               }
             });
 
             const errorMessage = error instanceof Error ? error.message : 'Failed to deactivate category';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to deactivate category', errorMessage);
@@ -492,13 +492,13 @@ export const useCriteriaStore = create<CriteriaStore>()(
             // For now, we'll use the role descriptions from the criteria
             const criteria = await criteriaService.getCriteriaById(criteriaId);
 
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.roleDescriptions[criteriaId] = criteria.roleDescriptions;
               state.lastFetch[`role-descriptions-${criteriaId}`] = Date.now();
             });
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to fetch role descriptions';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to load role descriptions', errorMessage);
@@ -506,7 +506,7 @@ export const useCriteriaStore = create<CriteriaStore>()(
           }
         },
 
-        addRoleDescription: async (criteriaId: number, data) => {
+        addRoleDescription: async (criteriaId: number, data: AddRoleDescriptionRequest) => {
           try {
             await criteriaService.addRoleDescription(criteriaId, data);
 
@@ -516,7 +516,7 @@ export const useCriteriaStore = create<CriteriaStore>()(
             useUIStore.getState().showSuccess('Role description added successfully');
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to add role description';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to add role description', errorMessage);
@@ -524,7 +524,7 @@ export const useCriteriaStore = create<CriteriaStore>()(
           }
         },
 
-        updateRoleDescription: async (criteriaId: number, roleId: number, data) => {
+        updateRoleDescription: async (criteriaId: number, roleId: number, data: UpdateRoleDescriptionRequest) => {
           try {
             await criteriaService.updateRoleDescription(criteriaId, roleId, data);
 
@@ -534,7 +534,7 @@ export const useCriteriaStore = create<CriteriaStore>()(
             useUIStore.getState().showSuccess('Role description updated successfully');
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to update role description';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to update role description', errorMessage);
@@ -547,15 +547,15 @@ export const useCriteriaStore = create<CriteriaStore>()(
             await criteriaService.deleteRoleDescription(criteriaId, roleId);
 
             // Remove from state
-            set((state) => {
+            set((state: CriteriaStore) => {
               const descriptions = state.roleDescriptions[criteriaId] || [];
-              state.roleDescriptions[criteriaId] = descriptions.filter(d => d.roleId !== roleId);
+              state.roleDescriptions[criteriaId] = descriptions.filter((d: CriteriaRoleDescriptionDto) => d.roleId !== roleId);
             });
 
             useUIStore.getState().showSuccess('Role description deleted successfully');
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to delete role description';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to delete role description', errorMessage);
@@ -566,15 +566,15 @@ export const useCriteriaStore = create<CriteriaStore>()(
         // Weight management
         fetchCategoryWeights: async () => {
           try {
-            const weights = await criteriaCategoryService.getCategoryWeights();
+            const response = await criteriaCategoryService.getCategoryWeights();
 
-            set((state) => {
-              state.categoryWeights = weights;
+            set((state: CriteriaStore) => {
+              state.categoryWeights = response.data;
               state.lastFetch.categoryWeights = Date.now();
             });
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to fetch category weights';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to load category weights', errorMessage);
@@ -582,16 +582,16 @@ export const useCriteriaStore = create<CriteriaStore>()(
           }
         },
 
-        validateWeights: async (weights) => {
+        validateWeights: async (weights: CategoryWeightDto[]) => {
           try {
             const validation = await criteriaCategoryService.validateWeights(weights);
 
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.weightValidation = validation;
             });
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to validate weights';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to validate weights', errorMessage);
@@ -599,18 +599,18 @@ export const useCriteriaStore = create<CriteriaStore>()(
           }
         },
 
-        rebalanceWeights: async (weights) => {
+        rebalanceWeights: async (weights: CategoryWeightDto[]) => {
           try {
             const result = await criteriaCategoryService.rebalanceWeights({ categoryWeights: weights });
 
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.categoryWeights = result.weights;
             });
 
             useUIStore.getState().showSuccess('Weights rebalanced successfully');
           } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Failed to rebalance weights';
-            set((state) => {
+            set((state: CriteriaStore) => {
               state.error = errorMessage;
             });
             useUIStore.getState().showError('Failed to rebalance weights', errorMessage);
@@ -619,77 +619,77 @@ export const useCriteriaStore = create<CriteriaStore>()(
         },
 
         // Optimistic updates
-        addCriteriaOptimistic: (criteria) => {
-          set((state) => {
+        addCriteriaOptimistic: (criteria: CriteriaDto) => {
+          set((state: CriteriaStore) => {
             state.criteria.unshift(criteria);
           });
         },
 
-        updateCriteriaOptimistic: (id, data) => {
-          set((state) => {
-            const criteriaIndex = state.criteria.findIndex(c => c.id === id);
+        updateCriteriaOptimistic: (id: number, data: Partial<CriteriaDto>) => {
+          set((state: CriteriaStore) => {
+            const criteriaIndex = state.criteria.findIndex((c: CriteriaDto) => c.id === id);
             if (criteriaIndex !== -1) {
               state.criteria[criteriaIndex] = { ...state.criteria[criteriaIndex], ...data };
             }
           });
         },
 
-        removeCriteriaOptimistic: (id) => {
-          set((state) => {
-            state.criteria = state.criteria.filter(c => c.id !== id);
+        removeCriteriaOptimistic: (id: number) => {
+          set((state: CriteriaStore) => {
+            state.criteria = state.criteria.filter((c: CriteriaDto) => c.id !== id);
           });
         },
 
-        addCategoryOptimistic: (category) => {
-          set((state) => {
+        addCategoryOptimistic: (category: CriteriaCategoryDto) => {
+          set((state: CriteriaStore) => {
             state.categories.unshift(category);
           });
         },
 
-        updateCategoryOptimistic: (id, data) => {
-          set((state) => {
-            const categoryIndex = state.categories.findIndex(c => c.id === id);
+        updateCategoryOptimistic: (id: number, data: Partial<CriteriaCategoryDto>) => {
+          set((state: CriteriaStore) => {
+            const categoryIndex = state.categories.findIndex((c: CriteriaCategoryDto) => c.id === id);
             if (categoryIndex !== -1) {
               state.categories[categoryIndex] = { ...state.categories[categoryIndex], ...data };
             }
           });
         },
 
-        removeCategoryOptimistic: (id) => {
-          set((state) => {
-            state.categories = state.categories.filter(c => c.id !== id);
+        removeCategoryOptimistic: (id: number) => {
+          set((state: CriteriaStore) => {
+            state.categories = state.categories.filter((c: CriteriaCategoryDto) => c.id !== id);
           });
         },
 
         // Filters
-        setFilters: (filters) => {
-          set((state) => {
+        setFilters: (filters: Partial<CriteriaState['filters']>) => {
+          set((state: CriteriaStore) => {
             state.filters = { ...state.filters, ...filters };
           });
         },
 
         // UI state management
-        setError: (error) => {
-          set((state) => {
+        setError: (error: string | null) => {
+          set((state: CriteriaStore) => {
             state.error = error;
           });
         },
 
         clearError: () => {
-          set((state) => {
+          set((state: CriteriaStore) => {
             state.error = null;
           });
         },
 
-        setLoading: (loading) => {
-          set((state) => {
+        setLoading: (loading: boolean) => {
+          set((state: CriteriaStore) => {
             state.isLoading = loading;
           });
         },
 
         // Cache management
-        invalidateCache: (key) => {
-          set((state) => {
+        invalidateCache: (key?: string) => {
+          set((state: CriteriaStore) => {
             if (key) {
               delete state.lastFetch[key];
             } else {
@@ -699,19 +699,19 @@ export const useCriteriaStore = create<CriteriaStore>()(
         },
 
         clearCurrentCriteria: () => {
-          set((state) => {
+          set((state: CriteriaStore) => {
             state.currentCriteria = null;
           });
         },
 
         clearCurrentCategory: () => {
-          set((state) => {
+          set((state: CriteriaStore) => {
             state.currentCategory = null;
           });
         },
 
         reset: () => {
-          set((state) => {
+          set((state: CriteriaStore) => {
             Object.assign(state, initialState);
           });
         },

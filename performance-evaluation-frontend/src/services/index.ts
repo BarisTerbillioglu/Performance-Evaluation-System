@@ -1,12 +1,12 @@
-// Export all services
-export * from './api';
-export * from './authService';
-export * from './userService';
-export * from './evaluationService';
-export * from './criteriaService';
-export * from './criteriaCategoryService';
-export * from './departmentService';
-export * from './roleService';
-export * from './teamService';
-export * from './dashboardService';
-export * from './auditService';
+export { authService } from './authService';
+export { userService } from './userService';
+export { departmentService } from './departmentService';
+export { teamService } from './teamService';
+export { evaluationService } from './evaluationService';
+export { criteriaService } from './criteriaService';
+export { criteriaCategoryService } from './criteriaCategoryService';
+export { dashboardService } from './dashboardService';
+export { fileService } from './fileService';
+export { analyticsService } from './analyticsService';
+export { default as SettingsService } from './settingsService';
+export { apiClient } from './api';

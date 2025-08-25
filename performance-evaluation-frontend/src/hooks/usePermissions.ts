@@ -1,226 +1,196 @@
-import { useAuth } from '@/store';
-import { UserRole, ROLE_PERMISSIONS, ROLE_HIERARCHY } from '@/types/roles';
+import { useAuth } from '@/hooks/useAuth';
+import { UserRole, ROLE_PERMISSIONS } from '@/types/roles';
 
-export interface Permission {
+interface Permission {
   resource: string;
-  action: string;
+  actions: string[];
 }
 
+interface RolePermissions {
+  [key: string]: Permission[];
+}
+
+// Updated permission structure
+const ROLE_PERMISSIONS_STRUCTURED: RolePermissions = {
+  [UserRole.EMPLOYEE]: [
+    { resource: 'evaluation', actions: ['view:own'] },
+    { resource: 'profile', actions: ['view:own', 'edit:own'] },
+    { resource: 'dashboard', actions: ['view:personal'] },
+    { resource: 'reports', actions: ['view:own'] },
+    { resource: 'notifications', actions: ['view:own'] },
+  ],
+  [UserRole.EVALUATOR]: [
+    { resource: 'evaluation', actions: ['view:own', 'view:assigned', 'create', 'edit:assigned', 'submit:assigned', 'score:assigned', 'comment:assigned'] },
+    { resource: 'profile', actions: ['view:own', 'edit:own'] },
+    { resource: 'dashboard', actions: ['view:personal', 'view:team'] },
+    { resource: 'reports', actions: ['view:own', 'view:team', 'create:basic'] },
+    { resource: 'notifications', actions: ['view:own', 'send:team'] },
+    { resource: 'criteria', actions: ['view:active'] },
+    { resource: 'team', actions: ['view:assigned', 'manage:assigned'] },
+  ],
+  [UserRole.MANAGER]: [
+    { resource: 'evaluation', actions: ['view:all', 'create', 'edit:all', 'submit:all', 'score:all', 'comment:all', 'approve', 'reject'] },
+    { resource: 'profile', actions: ['view:all', 'edit:all'] },
+    { resource: 'dashboard', actions: ['view:all'] },
+    { resource: 'reports', actions: ['view:all', 'create:all', 'export:all', 'schedule:all'] },
+    { resource: 'notifications', actions: ['view:all', 'send:all'] },
+    { resource: 'criteria', actions: ['view:all', 'edit:all', 'create', 'delete'] },
+    { resource: 'team', actions: ['view:all', 'manage:all', 'create', 'delete'] },
+    { resource: 'department', actions: ['view:all', 'manage:all'] },
+    { resource: 'user', actions: ['view:all', 'edit:all', 'create', 'delete'] },
+    { resource: 'analytics', actions: ['view:all'] },
+    { resource: 'settings', actions: ['view:system', 'edit:system'] },
+  ],
+  [UserRole.ADMIN]: [
+    { resource: 'evaluation', actions: ['view:all', 'create', 'edit:all', 'submit:all', 'score:all', 'comment:all', 'approve', 'reject', 'delete'] },
+    { resource: 'profile', actions: ['view:all', 'edit:all', 'delete'] },
+    { resource: 'dashboard', actions: ['view:all'] },
+    { resource: 'reports', actions: ['view:all', 'create:all', 'export:all', 'schedule:all', 'delete'] },
+    { resource: 'notifications', actions: ['view:all', 'send:all', 'delete'] },
+    { resource: 'criteria', actions: ['view:all', 'edit:all', 'create', 'delete'] },
+    { resource: 'team', actions: ['view:all', 'manage:all', 'create', 'delete'] },
+    { resource: 'department', actions: ['view:all', 'manage:all', 'create', 'delete'] },
+    { resource: 'user', actions: ['view:all', 'edit:all', 'create', 'delete', 'activate', 'deactivate'] },
+    { resource: 'role', actions: ['view:all', 'edit:all', 'create', 'delete'] },
+    { resource: 'analytics', actions: ['view:all', 'export:all'] },
+    { resource: 'settings', actions: ['view:all', 'edit:all'] },
+    { resource: 'system', actions: ['maintenance', 'backup', 'restore'] },
+    { resource: 'audit', actions: ['view:all', 'export:all'] },
+  ],
+};
+
 export const usePermissions = () => {
-  const { state, hasRole } = useAuth();
+  const { user } = useAuth();
 
-  /**
-   * Check if the current user has a specific permission
-   */
-  const hasPermission = (resource: string, action: string): boolean => {
-    if (!state.user || !state.isAuthenticated) {
-      return false;
-    }
-
-    // Admin has all permissions
-    if (hasRole(UserRole.ADMIN)) {
-      return true;
-    }
-
-    // Get user's roles
-    const userRoles = state.user.roles || [];
-    
-    // Check permissions for each role
-    return userRoles.some(roleName => {
-      const role = roleName as UserRole;
-      const permissions = ROLE_PERMISSIONS[role];
-      
-      if (!permissions) return false;
-      
-      return permissions.some(permission => 
-        permission.resource === resource && 
-        permission.actions.includes(action)
-      );
-    });
-  };
-
-  /**
-   * Check if user has any of the specified permissions
-   */
-  const hasAnyPermission = (permissions: Permission[]): boolean => {
-    return permissions.some(permission => 
-      hasPermission(permission.resource, permission.action)
-    );
-  };
-
-  /**
-   * Check if user has all of the specified permissions
-   */
-  const hasAllPermissions = (permissions: Permission[]): boolean => {
-    return permissions.every(permission => 
-      hasPermission(permission.resource, permission.action)
-    );
-  };
-
-  /**
-   * Get all permissions for the current user
-   */
   const getUserPermissions = (): Permission[] => {
-    if (!state.user || !state.isAuthenticated) {
-      return [];
-    }
+    if (!user || !user.roleIds) return [];
 
-    const userRoles = state.user.roles || [];
     const permissions: Permission[] = [];
+    const processedResources = new Set<string>();
 
-    userRoles.forEach(roleName => {
-      const role = roleName as UserRole;
-      const rolePermissions = ROLE_PERMISSIONS[role];
+    user.roleIds.forEach(roleId => {
+      const role = roleId as UserRole;
+      const rolePermissions = ROLE_PERMISSIONS_STRUCTURED[role] || [];
       
-      if (rolePermissions) {
-        rolePermissions.forEach(permission => {
-          permission.actions.forEach(action => {
-            // Avoid duplicates
-            const exists = permissions.some(p => 
-              p.resource === permission.resource && p.action === action
-            );
-            
-            if (!exists) {
-              permissions.push({
-                resource: permission.resource,
-                action: action
-              });
-            }
+      rolePermissions.forEach(permission => {
+        if (!processedResources.has(permission.resource)) {
+          processedResources.add(permission.resource);
+          permissions.push({
+            resource: permission.resource,
+            actions: [...permission.actions]
           });
-        });
-      }
+        } else {
+          // Merge actions for existing resource
+          const existingPermission = permissions.find(p => p.resource === permission.resource);
+          if (existingPermission) {
+            permission.actions.forEach(action => {
+              if (!existingPermission.actions.includes(action)) {
+                existingPermission.actions.push(action);
+              }
+            });
+          }
+        }
+      });
     });
 
     return permissions;
   };
 
-  /**
-   * Check if user can access a specific route
-   */
-  const canAccessRoute = (path: string): boolean => {
-    if (!state.user || !state.isAuthenticated) {
-      return false;
-    }
+  const hasPermission = (resource: string, action: string): boolean => {
+    if (!user || !user.roleIds) return false;
 
-    // Admin can access all routes
-    if (hasRole(UserRole.ADMIN)) {
-      return true;
-    }
-
-    // Define route permissions
-    const routePermissions: Record<string, Permission[]> = {
-      '/users': [{ resource: 'users', action: 'read' }],
-      '/users/create': [{ resource: 'users', action: 'create' }],
-      '/evaluations': [{ resource: 'evaluations', action: 'read' }],
-      '/evaluations/create': [{ resource: 'evaluations', action: 'create' }],
-      '/criteria': [{ resource: 'criteria', action: 'read' }],
-      '/departments': [{ resource: 'departments', action: 'read' }],
-      '/teams': [{ resource: 'teams', action: 'read' }],
-      '/reports': [{ resource: 'reports', action: 'read' }],
-      '/admin': [{ resource: 'system', action: 'manage' }]
-    };
-
-    const requiredPermissions = routePermissions[path];
-    if (!requiredPermissions) {
-      return true; // No specific permissions required
-    }
-
-    return hasAnyPermission(requiredPermissions);
-  };
-
-  /**
-   * Filter data based on user permissions
-   */
-  const filterByPermission = <T>(
-    items: T[], 
-    getResourceId: (item: T) => string,
-    requiredAction: string = 'read'
-  ): T[] => {
-    if (hasRole(UserRole.ADMIN)) {
-      return items; // Admin can see all
-    }
-
-    return items.filter(item => {
-      const resourceId = getResourceId(item);
-      return hasPermission(resourceId, requiredAction);
+    return user.roleIds.some(roleId => {
+      const role = roleId as UserRole;
+      const rolePermissions = ROLE_PERMISSIONS_STRUCTURED[role] || [];
+      
+      return rolePermissions.some(permission => 
+        permission.resource === resource && permission.actions.includes(action)
+      );
     });
   };
 
-  /**
-   * Check if user can perform action on specific entity
-   */
-  const canPerformAction = (
-    entityType: string, 
-    action: string, 
-    entityId?: number,
-    ownerId?: number
-  ): boolean => {
-    // Check general permission
-    if (hasPermission(entityType, action)) {
-      return true;
-    }
-
-    // Check ownership-based permissions
-    if (ownerId && state.user?.id === ownerId) {
-      // Users can usually read/update their own data
-      if (action === 'read' || action === 'update') {
-        return hasPermission('profile', action);
-      }
-    }
-
-    return false;
+  const hasRole = (requiredRole: UserRole): boolean => {
+    if (!user || !user.roleIds) return false;
+    return user.roleIds.includes(requiredRole);
   };
 
-  /**
-   * Get permission level for a resource
-   */
-  const getPermissionLevel = (resource: string): string[] => {
-    const permissions = getUserPermissions();
-    return permissions
-      .filter(p => p.resource === resource)
-      .map(p => p.action);
+  const hasAnyRole = (requiredRoles: UserRole[]): boolean => {
+    if (!user || !user.roleIds) return false;
+    return requiredRoles.some(role => user.roleIds.includes(role));
   };
 
-  /**
-   * Check if user has elevated privileges
-   */
-  const hasElevatedPrivileges = (): boolean => {
-    return hasRole(UserRole.ADMIN) || hasRole(UserRole.MANAGER);
+  const hasAllRoles = (requiredRoles: UserRole[]): boolean => {
+    if (!user || !user.roleIds) return false;
+    return requiredRoles.every(role => user.roleIds.includes(role));
   };
 
-  /**
-   * Get user's highest role
-   */
   const getHighestRole = (): UserRole | null => {
-    if (!state.user?.roles) return null;
+    if (!user || !user.roleIds || user.roleIds.length === 0) return null;
+    
+    const roleHierarchy = {
+      [UserRole.EMPLOYEE]: 1,
+      [UserRole.EVALUATOR]: 2,
+      [UserRole.MANAGER]: 3,
+      [UserRole.ADMIN]: 4,
+    };
 
-    const roleHierarchy = [
-      UserRole.ADMIN,
-      UserRole.MANAGER, 
-      UserRole.HR,
-      UserRole.EVALUATOR,
-      UserRole.EMPLOYEE
-    ];
+    return user.roleIds.reduce((highest, current) => {
+      const currentRole = current as UserRole;
+      return roleHierarchy[currentRole] > roleHierarchy[highest as UserRole] ? currentRole : highest;
+    }) as UserRole;
+  };
 
-    for (const role of roleHierarchy) {
-      if (hasRole(role)) {
-        return role;
-      }
+  const canAccessResource = (
+    resource: string,
+    action: string,
+    entityId?: number,
+  ): boolean => {
+    // Check basic permission first
+    if (!hasPermission(resource, action)) {
+      return false;
     }
 
-    return null;
+    // Add entity-specific logic here if needed
+    // For now, just return the basic permission check
+    return true;
   };
+
+  const getAccessibleResources = (): string[] => {
+    const permissions = getUserPermissions();
+    return permissions.map(p => p.resource);
+  };
+
+  const getResourceActions = (resource: string): string[] => {
+    const permissions = getUserPermissions();
+    const resourcePermission = permissions.find(p => p.resource === resource);
+    return resourcePermission ? resourcePermission.actions : [];
+  };
+
+  // Role-specific permission checks
+  const isAdmin = (): boolean => hasRole(UserRole.ADMIN);
+  const isManager = (): boolean => hasRole(UserRole.MANAGER);
+  const isEvaluator = (): boolean => hasRole(UserRole.EVALUATOR);
+  const isEmployee = (): boolean => hasRole(UserRole.EMPLOYEE);
+
+  const isManagerOrAdmin = (): boolean => hasAnyRole([UserRole.MANAGER, UserRole.ADMIN]);
+  const isEvaluatorOrAdmin = (): boolean => hasAnyRole([UserRole.EVALUATOR, UserRole.MANAGER, UserRole.ADMIN]);
 
   return {
+    user,
+    permissions: getUserPermissions(),
     hasPermission,
-    hasAnyPermission,
-    hasAllPermissions,
-    getUserPermissions,
-    canAccessRoute,
-    filterByPermission,
-    canPerformAction,
-    getPermissionLevel,
-    hasElevatedPrivileges,
-    getHighestRole
+    hasRole,
+    hasAnyRole,
+    hasAllRoles,
+    getHighestRole,
+    canAccessResource,
+    getAccessibleResources,
+    getResourceActions,
+    isAdmin,
+    isManager,
+    isEvaluator,
+    isEmployee,
+    isManagerOrAdmin,
+    isEvaluatorOrAdmin,
   };
 };

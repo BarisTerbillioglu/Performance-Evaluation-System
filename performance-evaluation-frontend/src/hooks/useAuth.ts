@@ -1,5 +1,5 @@
 import { useAuthStore } from '@/stores';
-import { AuthContextType } from '@/types/auth';
+import { AuthContextType, UserInfo } from '@/types/auth';
 
 /**
  * Custom hook that provides the same interface as the old React Context-based useAuth
@@ -8,6 +8,13 @@ import { AuthContextType } from '@/types/auth';
 export const useAuth = (): AuthContextType & { getDefaultRedirectPath: () => string } => {
   const store = useAuthStore();
   
+  // Wrapper function to handle type mismatch
+  const updateUser = (userData: Partial<UserInfo>) => {
+    if (store.user) {
+      store.setUser({ ...store.user, ...userData });
+    }
+  };
+  
   return {
     state: {
       user: store.user,
@@ -15,11 +22,17 @@ export const useAuth = (): AuthContextType & { getDefaultRedirectPath: () => str
       isLoading: store.isLoading,
       isInitialized: store.isInitialized,
       error: store.error,
+      loading: store.isLoading,
     },
+    user: store.user,
+    loading: store.isLoading,
     login: store.login,
     logout: store.logout,
-    refreshAuth: store.refreshAuth,
     checkAuth: store.checkAuth,
+    refreshAuth: store.refreshAuth,
+    refreshToken: store.refreshAuth, // Alias for refreshAuth
+    updateUser,
+    initializeAuth: store.checkAuth, // Alias for checkAuth
     hasRole: store.hasRole,
     hasPermission: store.hasPermission,
     canAccessRoute: store.canAccessRoute,
