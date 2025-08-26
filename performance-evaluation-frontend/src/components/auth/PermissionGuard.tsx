@@ -64,7 +64,7 @@ export const PermissionGuard: React.FC<PermissionGuardProps> = ({
 export const AdminOnly: React.FC<{
   children: React.ReactNode;
   fallback?: React.ReactNode;
-}> = ({ children, fallback }) => (
+}> = ({ children }) => (
   <PermissionGuard
     requiredRoles={[UserRole.ADMIN]}
     redirectTo="/access-denied"
@@ -76,7 +76,7 @@ export const AdminOnly: React.FC<{
 export const CanManageUsers: React.FC<{
   children: React.ReactNode;
   fallback?: React.ReactNode;
-}> = ({ children, fallback }) => (
+}> = ({ children }) => (
   <PermissionGuard
     requiredPermissions={[
       'users:create',
@@ -92,7 +92,7 @@ export const CanManageUsers: React.FC<{
 export const CanViewReports: React.FC<{
   children: React.ReactNode;
   fallback?: React.ReactNode;
-}> = ({ children, fallback }) => (
+}> = ({ children }) => (
   <PermissionGuard
     requiredPermissions={['reports:read']}
     redirectTo="/access-denied"
@@ -104,7 +104,7 @@ export const CanViewReports: React.FC<{
 export const CanManageEvaluations: React.FC<{
   children: React.ReactNode;
   fallback?: React.ReactNode;
-}> = ({ children, fallback }) => (
+}> = ({ children }) => (
   <PermissionGuard
     requiredPermissions={[
       'evaluations:create',
@@ -119,7 +119,7 @@ export const CanManageEvaluations: React.FC<{
 export const CanExportData: React.FC<{
   children: React.ReactNode;
   fallback?: React.ReactNode;
-}> = ({ children, fallback }) => (
+}> = ({ children }) => (
   <PermissionGuard
     requiredPermissions={[
       'reports:export',
