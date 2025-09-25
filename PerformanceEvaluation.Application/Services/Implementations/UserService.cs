@@ -408,7 +408,7 @@ namespace PerformanceEvaluation.Application.Services.Implementations
                 Email = user.Email,
                 TeamId = user.EvaluatorAssignments.Where(ea => ea.EvaluatorID == user.ID && ea.IsActive)
                     .Select(ea => ea.TeamID).Distinct().ToList(),
-                RoleId = user.RoleAssignments.Where(ra => ra.RoleID > 3) 
+                RoleId = user.RoleAssignments.Where(ra => ra.RoleID > 3) // Job roles only
                     .Select(ra => ra.RoleID).ToList(),
                 DepartmentId = user.DepartmentID,
                 IsActive = user.IsActive,

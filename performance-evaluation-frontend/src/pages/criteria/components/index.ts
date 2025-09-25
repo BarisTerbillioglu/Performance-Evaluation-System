@@ -1,9 +1,0 @@
-export { CriteriaCategoriesSection } from './CriteriaCategoriesSection';
-export { CriteriaListSection } from './CriteriaListSection';
-export { CriteriaFormModal } from './CriteriaFormModal';
-export { CategoryFormModal } from './CategoryFormModal';
-export { WeightValidationModal } from './WeightValidationModal';
-export { ImportExportModal } from './ImportExportModal';
-export { VersionHistoryModal } from './VersionHistoryModal';
-export { CriteriaPreviewModal } from './CriteriaPreviewModal';
-export { RoleDescriptionEditor } from './RoleDescriptionEditor';

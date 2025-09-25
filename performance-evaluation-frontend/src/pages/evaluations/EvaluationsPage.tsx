@@ -1,1 +1,0 @@
-export { EvaluationListPage as EvaluationsPage } from './EvaluationListPage';
