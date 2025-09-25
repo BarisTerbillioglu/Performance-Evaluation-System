@@ -1,22 +1,18 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { StateCreator } from 'zustand';
-import {
-  userService,
-  teamService,
-  departmentService
-} from '@/services';
-import {
-  UserDto,
+import { userService, teamService, departmentService } from '@/services';
+import { 
+  UserDto, 
   UserListDto,
   UserWithDetailsDto,
-  CreateUserRequest,
+  CreateUserRequest, 
   UpdateUserRequest,
   DepartmentDto,
+  DepartmentWithUsersDto,
   TeamDto,
+  TeamWithMembersDto,
   UserSearchRequest,
-  PagedResult,
-  ApiError
+  PagedResult
 } from '@/types';
 import { loggerWithActions } from '../middleware/logger';
 
@@ -62,14 +58,14 @@ interface UserActions {
   createUser: (userData: CreateUserRequest) => Promise<void>;
   updateUser: (id: number, userData: UpdateUserRequest) => Promise<void>;
   deleteUser: (id: number) => Promise<void>;
-
+  
   // Department actions
   fetchDepartments: () => Promise<void>;
   fetchDepartmentById: (id: number) => Promise<void>;
   createDepartment: (departmentData: any) => Promise<void>;
   updateDepartment: (id: number, departmentData: any) => Promise<void>;
   deleteDepartment: (id: number) => Promise<void>;
-
+  
   // Team actions
   fetchTeams: () => Promise<void>;
   fetchTeamById: (id: number) => Promise<void>;
@@ -78,7 +74,7 @@ interface UserActions {
   deleteTeam: (id: number) => Promise<void>;
   assignEmployee: (teamId: number, userId: number) => Promise<void>;
   removeUserFromTeam: (teamId: number, userId: number) => Promise<void>;
-
+  
   // Utility actions
   setSearchTerm: (term: string) => void;
   setFilters: (filters: any) => void;
@@ -87,18 +83,11 @@ interface UserActions {
   clearError: () => void;
   setLoading: (loading: boolean) => void;
   invalidateCache: (key?: string) => void;
-  reset: () => void;
 }
 
-type UserStoreType = UserState & UserActions;
+type UserStore = UserState & UserActions;
 
-const createUserSlice: StateCreator<
-  UserStoreType,
-  [['zustand/immer', never]],
-  [],
-  UserStoreType
-> = (set, get) => ({
-  // State
+const initialState: UserState = {
   users: [],
   userDetails: null,
   departments: [],
@@ -131,438 +120,454 @@ const createUserSlice: StateCreator<
   error: null,
   cache: {},
   lastFetch: null,
+};
 
-  // Actions
-  fetchUsers: async () => {
-    set((state) => {
-      state.loading.users = true;
-      state.error = null;
-    });
-
-    try {
-      const response: PagedResult<UserDto> = await userService.getUsers();
-      set((state) => {
-        state.users = response.data;
-        state.loading.users = false;
-        state.lastFetch = new Date();
-      });
-    } catch (error) {
-      const apiError = error as ApiError;
-      set((state) => {
-        state.error = apiError.message;
-        state.loading.users = false;
-      });
-    }
-  },
-
-  fetchUserById: async (id: number) => {
-    set((state) => {
-      state.loading.userDetails = true;
-      state.error = null;
-    });
-
-    try {
-      const user: UserWithDetailsDto = await userService.getUserById(id);
-      set((state) => {
-        state.userDetails = user;
-        state.loading.userDetails = false;
-        state.cache[`user-${id}`] = new Date();
-      });
-    } catch (error) {
-      const apiError = error as ApiError;
-      set((state) => {
-        state.error = apiError.message;
-        state.loading.userDetails = false;
-      });
-    }
-  },
-
-  createUser: async (userData: CreateUserRequest) => {
-    set((state) => {
-      state.loading.create = true;
-      state.error = null;
-    });
-
-    try {
-      const newUser: UserDto = await userService.createUser(userData);
-      set((state) => {
-        state.users.push(newUser);
-        state.loading.create = false;
-        delete state.cache.users;
-      });
-    } catch (error) {
-      const apiError = error as ApiError;
-      set((state) => {
-        state.error = apiError.message;
-        state.loading.create = false;
-      });
-      throw error;
-    }
-  },
-
-  updateUser: async (id: number, userData: UpdateUserRequest) => {
-    set((state) => {
-      state.loading.update = true;
-      state.error = null;
-    });
-
-    try {
-      const updatedUser: UserDto = await userService.updateUser(id, userData);
-      set((state) => {
-        const index = state.users.findIndex(u => u.id === id);
-        if (index !== -1) {
-          state.users[index] = updatedUser;
-        }
-        if (state.userDetails?.id === id) {
-          state.userDetails = { ...state.userDetails, ...updatedUser };
-        }
-        state.loading.update = false;
-        delete state.cache.users;
-        delete state.cache[`user-${id}`];
-      });
-    } catch (error) {
-      const apiError = error as ApiError;
-      set((state) => {
-        state.error = apiError.message;
-        state.loading.update = false;
-      });
-      throw error;
-    }
-  },
-
-  deleteUser: async (id: number) => {
-    set((state) => {
-      state.loading.delete = true;
-      state.error = null;
-    });
-
-    try {
-      await userService.deleteUser(id);
-      set((state) => {
-        state.users = state.users.filter(u => u.id !== id);
-        if (state.userDetails?.id === id) {
-          state.userDetails = null;
-        }
-        state.loading.delete = false;
-        delete state.cache[`user-${id}`];
-        delete state.cache.users;
-      });
-    } catch (error) {
-      const apiError = error as ApiError;
-      set((state) => {
-        state.error = apiError.message;
-        state.loading.delete = false;
-      });
-      throw error;
-    }
-  },
-
-  fetchDepartments: async () => {
-    set((state) => {
-      state.loading.departments = true;
-      state.error = null;
-    });
-
-    try {
-      const departments: DepartmentDto[] = await departmentService.getDepartments();
-      set((state) => {
-        state.departments = departments;
-        state.loading.departments = false;
-      });
-    } catch (error) {
-      const apiError = error as ApiError;
-      set((state) => {
-        state.error = apiError.message;
-        state.loading.departments = false;
-      });
-    }
-  },
-
-  fetchDepartmentById: async (id: number) => {
-    try {
-      const department: DepartmentDto = await departmentService.getDepartmentById(id);
-      set((state) => {
-        const index = state.departments.findIndex(d => d.id === id);
-        if (index === -1) {
-          state.departments.push(department);
-        } else {
-          state.departments[index] = department;
-        }
-      });
-    } catch (error) {
-      const apiError = error as ApiError;
-      set((state) => {
-        state.error = apiError.message;
-      });
-    }
-  },
-
-  createDepartment: async (departmentData: any) => {
-    try {
-      const newDepartment: DepartmentDto = await departmentService.createDepartment(departmentData);
-      set((state) => {
-        state.departments.push(newDepartment);
-      });
-    } catch (error) {
-      const apiError = error as ApiError;
-      set((state) => {
-        state.error = apiError.message;
-      });
-      throw error;
-    }
-  },
-
-  updateDepartment: async (id: number, departmentData: any) => {
-    try {
-      const updatedDepartment: DepartmentDto = await departmentService.updateDepartment(id, departmentData);
-      set((state) => {
-        const index = state.departments.findIndex(d => d.id === id);
-        if (index !== -1) {
-          state.departments[index] = updatedDepartment;
-        }
-      });
-    } catch (error) {
-      const apiError = error as ApiError;
-      set((state) => {
-        state.error = apiError.message;
-      });
-      throw error;
-    }
-  },
-
-  deleteDepartment: async (id: number) => {
-    try {
-      await departmentService.deleteDepartment(id);
-      set((state) => {
-        state.departments = state.departments.filter(d => d.id !== id);
-      });
-    } catch (error) {
-      const apiError = error as ApiError;
-      set((state) => {
-        state.error = apiError.message;
-      });
-      throw error;
-    }
-  },
-
-  fetchTeams: async () => {
-    set((state) => {
-      state.loading.teams = true;
-      state.error = null;
-    });
-
-    try {
-      const teams: TeamDto[] = await teamService.getTeams();
-      set((state) => {
-        state.teams = teams;
-        state.loading.teams = false;
-      });
-    } catch (error) {
-      const apiError = error as ApiError;
-      set((state) => {
-        state.error = apiError.message;
-        state.loading.teams = false;
-      });
-    }
-  },
-
-  fetchTeamById: async (id: number) => {
-    try {
-      const team: TeamDto = await teamService.getTeamById(id);
-      set((state) => {
-        const index = state.teams.findIndex(t => t.id === id);
-        if (index === -1) {
-          state.teams.push(team);
-        } else {
-          state.teams[index] = team;
-        }
-      });
-    } catch (error) {
-      const apiError = error as ApiError;
-      set((state) => {
-        state.error = apiError.message;
-      });
-    }
-  },
-
-  createTeam: async (teamData: any) => {
-    try {
-      const newTeam: TeamDto = await teamService.createTeam(teamData);
-      set((state) => {
-        state.teams.push(newTeam);
-      });
-    } catch (error) {
-      const apiError = error as ApiError;
-      set((state) => {
-        state.error = apiError.message;
-      });
-      throw error;
-    }
-  },
-
-  updateTeam: async (id: number, teamData: any) => {
-    try {
-      const updatedTeam: TeamDto = await teamService.updateTeam(id, teamData);
-      set((state) => {
-        const index = state.teams.findIndex(t => t.id === id);
-        if (index !== -1) {
-          state.teams[index] = updatedTeam;
-        }
-      });
-    } catch (error) {
-      const apiError = error as ApiError;
-      set((state) => {
-        state.error = apiError.message;
-      });
-      throw error;
-    }
-  },
-
-  deleteTeam: async (id: number) => {
-    try {
-      await teamService.deleteTeam(id);
-      set((state) => {
-        state.teams = state.teams.filter(t => t.id !== id);
-      });
-    } catch (error) {
-      const apiError = error as ApiError;
-      set((state) => {
-        state.error = apiError.message;
-      });
-      throw error;
-    }
-  },
-
-  assignEmployee: async (teamId: number, userId: number) => {
-    try {
-      await teamService.assignEmployee(teamId, userId);
-      await get().fetchTeamById(teamId);
-    } catch (error) {
-      const apiError = error as ApiError;
-      set((state) => {
-        state.error = apiError.message;
-      });
-      throw error;
-    }
-  },
-
-  removeUserFromTeam: async (teamId: number, userId: number) => {
-    try {
-      await teamService.removeUserFromTeam(teamId, userId);
-      await get().fetchTeamById(teamId);
-    } catch (error) {
-      const apiError = error as ApiError;
-      set((state) => {
-        state.error = apiError.message;
-      });
-      throw error;
-    }
-  },
-
-  setSearchTerm: (term: string) => {
-    set((state) => {
-      state.filters.searchTerm = term;
-    });
-  },
-
-  setFilters: (filters: any) => {
-    set((state) => {
-      state.filters = { ...state.filters, ...filters };
-    });
-  },
-
-  setPagination: (pagination: any) => {
-    set((state) => {
-      state.pagination = { ...state.pagination, ...pagination };
-    });
-  },
-
-  setError: (error: string | null) => {
-    set((state) => {
-      state.error = error;
-    });
-  },
-
-  clearError: () => {
-    set((state) => {
-      state.error = null;
-    });
-  },
-
-  setLoading: (loading: boolean) => {
-    set((state) => {
-      state.loading.users = loading;
-    });
-  },
-
-  invalidateCache: (key?: string) => {
-    set((state) => {
-      if (key) {
-        delete state.cache[key];
-      } else {
-        state.cache = {};
-      }
-    });
-  },
-
-  reset: () => {
-    set((state) => {
-      state.users = [];
-      state.userDetails = null;
-      state.departments = [];
-      state.teams = [];
-      state.searchResults = [];
-      state.pagination = {
-        page: 1,
-        pageSize: 10,
-        totalCount: 0,
-        totalPages: 0,
-        hasNextPage: false,
-        hasPreviousPage: false,
-      };
-      state.filters = {
-        searchTerm: '',
-        departmentId: null,
-        roleId: null,
-        isActive: null,
-      };
-      state.loading = {
-        users: false,
-        userDetails: false,
-        departments: false,
-        teams: false,
-        search: false,
-        create: false,
-        update: false,
-        delete: false,
-      };
-      state.error = null;
-      state.cache = {};
-      state.lastFetch = null;
-    });
-  }
-});
-
-export const useUserStore = create<UserStoreType>()(
+export const useUserStore = create<UserStore>()(
   loggerWithActions(
-    immer(createUserSlice),
-    {
-      name: 'UserStore',
-    }
+    immer((set, get) => ({
+      ...initialState,
+
+      // User actions
+      fetchUsers: async () => {
+        try {
+          set((state: UserStore) => {
+            state.loading.users = true;
+            state.error = null;
+          });
+
+          const response = await userService.getUsers();
+
+          set((state: UserStore) => {
+            state.users = response.data;
+            state.loading.users = false;
+            state.lastFetch = new Date();
+          });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch users';
+          set((state: UserStore) => {
+            state.error = errorMessage;
+            state.loading.users = false;
+          });
+        }
+      },
+
+      fetchUserById: async (id: number) => {
+        try {
+          set((state: UserStore) => {
+            state.loading.userDetails = true;
+            state.error = null;
+          });
+
+          const user = await userService.getUserById(id);
+
+          set((state: UserStore) => {
+            state.userDetails = user as UserWithDetailsDto;
+            state.loading.userDetails = false;
+            state.cache[`user-${id}`] = new Date();
+          });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch user';
+          set((state: UserStore) => {
+            state.error = errorMessage;
+            state.loading.userDetails = false;
+          });
+        }
+      },
+
+      createUser: async (userData: CreateUserRequest) => {
+        try {
+          set((state: UserStore) => {
+            state.loading.create = true;
+            state.error = null;
+          });
+
+          await userService.createUser(userData);
+
+          set((state: UserStore) => {
+            state.loading.create = false;
+            delete state.cache.users;
+          });
+
+          // Refresh users list
+          get().fetchUsers();
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to create user';
+          set((state: UserStore) => {
+            state.error = errorMessage;
+            state.loading.create = false;
+          });
+        }
+      },
+
+      updateUser: async (id: number, userData: UpdateUserRequest) => {
+        try {
+          set((state: UserStore) => {
+            state.loading.update = true;
+            state.error = null;
+          });
+
+          await userService.updateUser(id, userData);
+
+          set((state: UserStore) => {
+            state.loading.update = false;
+            delete state.cache.users;
+            delete state.cache[`user-${id}`];
+          });
+
+          // Refresh data
+          get().fetchUsers();
+          if (get().userDetails?.id === id) {
+            get().fetchUserById(id);
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to update user';
+          set((state: UserStore) => {
+            state.error = errorMessage;
+            state.loading.update = false;
+          });
+        }
+      },
+
+      deleteUser: async (id: number) => {
+        try {
+          set((state: UserStore) => {
+            state.loading.delete = true;
+            state.error = null;
+          });
+
+          await userService.deleteUser(id);
+
+          set((state: UserStore) => {
+            state.loading.delete = false;
+            if (state.userDetails?.id === id) {
+              state.userDetails = null;
+            }
+            delete state.cache[`user-${id}`];
+            delete state.cache.users;
+          });
+
+          // Refresh users list
+          get().fetchUsers();
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to delete user';
+          set((state: UserStore) => {
+            state.error = errorMessage;
+            state.loading.delete = false;
+          });
+        }
+      },
+
+      // Department actions
+      fetchDepartments: async () => {
+        try {
+          set((state: UserStore) => {
+            state.loading.departments = true;
+            state.error = null;
+          });
+
+          const departments = await departmentService.getDepartments();
+
+          set((state: UserStore) => {
+            state.departments = departments;
+            state.loading.departments = false;
+            state.cache.departments = new Date();
+          });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch departments';
+          set((state: UserStore) => {
+            state.error = errorMessage;
+            state.loading.departments = false;
+          });
+        }
+      },
+
+      fetchDepartmentById: async (id: number) => {
+        try {
+          const department = await departmentService.getDepartmentById(id);
+          set((state: UserStore) => {
+            state.userDetails = department as any;
+            state.cache[`department-${id}`] = new Date();
+          });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch department';
+          set((state: UserStore) => {
+            state.error = errorMessage;
+          });
+        }
+      },
+
+      createDepartment: async (departmentData: any) => {
+        try {
+          set((state: UserStore) => {
+            state.loading.create = true;
+            state.error = null;
+          });
+
+          await departmentService.createDepartment(departmentData);
+
+          set((state: UserStore) => {
+            state.loading.create = false;
+            delete state.cache.departments;
+          });
+
+          get().fetchDepartments();
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to create department';
+          set((state: UserStore) => {
+            state.error = errorMessage;
+            state.loading.create = false;
+          });
+        }
+      },
+
+      updateDepartment: async (id: number, departmentData: any) => {
+        try {
+          set((state: UserStore) => {
+            state.loading.update = true;
+            state.error = null;
+          });
+
+          await departmentService.updateDepartment(id, departmentData);
+
+          set((state: UserStore) => {
+            state.loading.update = false;
+            delete state.cache.departments;
+            delete state.cache[`department-${id}`];
+          });
+
+          get().fetchDepartments();
+          if (get().userDetails?.id === id) {
+            get().fetchDepartmentById(id);
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to update department';
+          set((state: UserStore) => {
+            state.error = errorMessage;
+            state.loading.update = false;
+          });
+        }
+      },
+
+      deleteDepartment: async (id: number) => {
+        try {
+          await departmentService.deleteDepartment(id);
+          set((state: UserStore) => {
+            if (state.userDetails?.id === id) {
+              state.userDetails = null;
+            }
+            delete state.cache[`department-${id}`];
+            delete state.cache.departments;
+          });
+          get().fetchDepartments();
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to delete department';
+          set((state: UserStore) => {
+            state.error = errorMessage;
+          });
+        }
+      },
+
+      // Team actions
+      fetchTeams: async () => {
+        try {
+          set((state: UserStore) => {
+            state.loading.teams = true;
+            state.error = null;
+          });
+
+          const teams = await teamService.getTeams();
+
+          set((state: UserStore) => {
+            state.teams = teams;
+            state.loading.teams = false;
+            state.cache.teams = new Date();
+          });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch teams';
+          set((state: UserStore) => {
+            state.error = errorMessage;
+            state.loading.teams = false;
+          });
+        }
+      },
+
+      fetchTeamById: async (id: number) => {
+        try {
+          const team = await teamService.getTeamById(id);
+          set((state: UserStore) => {
+            state.userDetails = team as any;
+            state.cache[`team-${id}`] = new Date();
+          });
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to fetch team';
+          set((state: UserStore) => {
+            state.error = errorMessage;
+          });
+        }
+      },
+
+      createTeam: async (teamData: any) => {
+        try {
+          set((state: UserStore) => {
+            state.loading.create = true;
+            state.error = null;
+          });
+
+          await teamService.createTeam(teamData);
+
+          set((state: UserStore) => {
+            state.loading.create = false;
+            delete state.cache.teams;
+          });
+
+          get().fetchTeams();
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to create team';
+          set((state: UserStore) => {
+            state.error = errorMessage;
+            state.loading.create = false;
+          });
+        }
+      },
+
+      updateTeam: async (id: number, teamData: any) => {
+        try {
+          set((state: UserStore) => {
+            state.loading.update = true;
+            state.error = null;
+          });
+
+          await teamService.updateTeam(id, teamData);
+
+          set((state: UserStore) => {
+            state.loading.update = false;
+            delete state.cache.teams;
+            delete state.cache[`team-${id}`];
+          });
+
+          get().fetchTeams();
+          if (get().userDetails?.id === id) {
+            get().fetchTeamById(id);
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to update team';
+          set((state: UserStore) => {
+            state.error = errorMessage;
+            state.loading.update = false;
+          });
+        }
+      },
+
+      deleteTeam: async (id: number) => {
+        try {
+          await teamService.deleteTeam(id);
+          set((state: UserStore) => {
+            if (state.userDetails?.id === id) {
+              state.userDetails = null;
+            }
+            delete state.cache[`team-${id}`];
+            delete state.cache.teams;
+          });
+          get().fetchTeams();
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to delete team';
+          set((state: UserStore) => {
+            state.error = errorMessage;
+          });
+        }
+      },
+
+      assignEmployee: async (teamId: number, userId: number) => {
+        try {
+          await teamService.assignEmployee(teamId, { userId });
+          if (get().userDetails?.id === teamId) {
+            get().fetchTeamById(teamId);
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to assign employee';
+          set((state: UserStore) => {
+            state.error = errorMessage;
+          });
+        }
+      },
+
+      removeUserFromTeam: async (teamId: number, userId: number) => {
+        try {
+          await teamService.removeUserFromTeam(teamId, userId);
+          if (get().userDetails?.id === teamId) {
+            get().fetchTeamById(teamId);
+          }
+        } catch (error) {
+          const errorMessage = error instanceof Error ? error.message : 'Failed to remove user from team';
+          set((state: UserStore) => {
+            state.error = errorMessage;
+          });
+        }
+      },
+
+      // Utility actions
+      setSearchTerm: (term: string) => {
+        set((state: UserStore) => {
+          state.filters.searchTerm = term;
+        });
+      },
+
+      setFilters: (filters: any) => {
+        set((state: UserStore) => {
+          state.filters = { ...state.filters, ...filters };
+        });
+      },
+
+      setPagination: (pagination: any) => {
+        set((state: UserStore) => {
+          state.pagination = { ...state.pagination, ...pagination };
+        });
+      },
+
+      setError: (error: string | null) => {
+        set((state: UserStore) => {
+          state.error = error;
+        });
+      },
+
+      clearError: () => {
+        set((state: UserStore) => {
+          state.error = null;
+        });
+      },
+
+      setLoading: (loading: boolean) => {
+        set((state: UserStore) => {
+          state.loading.users = loading;
+        });
+      },
+
+      invalidateCache: (key?: string) => {
+        set((state: UserStore) => {
+          if (key) {
+            delete state.cache[key];
+          } else {
+            state.cache = {};
+          }
+        });
+      },
+    }))
   )
 );
 
 // Export selectors for better performance
 export const userSelectors = {
-  users: (state: UserStoreType) => state.users,
-  currentUser: (state: UserStoreType) => state.userDetails,
-  employees: (state: UserStoreType) => state.users,
-  evaluators: (state: UserStoreType) => state.users,
-  departments: (state: UserStoreType) => state.departments,
-  teams: (state: UserStoreType) => state.teams,
-  loading: (state: UserStoreType) => state.loading,
-  error: (state: UserStoreType) => state.error,
-  searchTerm: (state: UserStoreType) => state.filters.searchTerm,
-  filters: (state: UserStoreType) => state.filters,
-  pagination: (state: UserStoreType) => state.pagination,
+  users: (state: UserStore) => state.users,
+  currentUser: (state: UserStore) => state.userDetails,
+  employees: (state: UserStore) => state.users,
+  evaluators: (state: UserStore) => state.users,
+  departments: (state: UserStore) => state.departments,
+  currentDepartment: (state: UserStore) => state.userDetails,
+  teams: (state: UserStore) => state.teams,
+  currentTeam: (state: UserStore) => state.userDetails,
+  isLoading: (state: UserStore) => state.loading.users,
+  error: (state: UserStore) => state.error,
+  searchTerm: (state: UserStore) => state.filters.searchTerm,
+  filters: (state: UserStore) => state.filters,
+  pagination: (state: UserStore) => state.pagination,
 };

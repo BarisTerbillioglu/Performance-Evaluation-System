@@ -1,32 +1,42 @@
-import { UserInfo, LoginRequest, LoginResponse, ApiError } from '@/types';
+import { UserInfo, LoginRequest } from '@/types/auth';
 import { UserRole } from '@/types/roles';
 
 export interface AuthState {
-  isAuthenticated: boolean;
+  // User data
   user: UserInfo | null;
-  token: string | null;
-  refreshToken: string | null;
-  expiresAt: Date | null;
-  loading: boolean;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  isInitialized: boolean;
   error: string | null;
-  loginAttempts: number;
-  lockoutUntil: Date | null;
-  preferences: {
-    theme: 'light' | 'dark';
-    language: string;
-    timezone: string;
-  };
+  
+  // Token info (for debugging/monitoring)
+  tokenExpiresAt: string | null;
+  lastRefresh: string | null;
 }
 
 export interface AuthActions {
+  // Authentication actions
   login: (credentials: LoginRequest) => Promise<void>;
   logout: () => Promise<void>;
-  refreshAccessToken: () => Promise<void>;
+  refreshAuth: () => Promise<void>;
   checkAuth: () => Promise<void>;
-  updateUser: (user: UserInfo) => void;
+  
+  // User management
+  setUser: (user: UserInfo) => void;
   clearError: () => void;
+  setError: (error: string) => void;
   setLoading: (loading: boolean) => void;
-  reset: () => void;
+  
+  // Role and permission helpers
+  hasRole: (role: UserRole) => boolean;
+  hasPermission: (resource: string, action: string) => boolean;
+  canAccessRoute: (path: string) => boolean;
+  getPrimaryRole: () => UserRole | null;
+  getDefaultRedirectPath: () => string;
+  
+  // Internal state management
+  setTokenInfo: (expiresAt: string) => void;
+  markRefresh: () => void;
 }
 
 export interface AuthStore extends AuthState, AuthActions {}

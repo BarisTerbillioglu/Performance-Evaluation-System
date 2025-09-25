@@ -3,6 +3,7 @@ import { RealTimeMetrics } from '@/types/analytics';
 import {
   ClockIcon,
   CheckCircleIcon,
+  ExclamationTriangleIcon,
   ChartBarIcon
 } from '@heroicons/react/24/outline';
 

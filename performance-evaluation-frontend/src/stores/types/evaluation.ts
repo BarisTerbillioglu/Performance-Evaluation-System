@@ -1,8 +1,8 @@
 import {
   EvaluationDto,
   EvaluationListDto,
-  EvaluationDetailDto,
   EvaluationFormDto,
+  EvaluationSummaryDto,
   CreateEvaluationRequest,
   UpdateEvaluationRequest,
   EvaluationScoreDto,
@@ -10,43 +10,41 @@ import {
   CommentDto,
   AddCommentRequest,
   UpdateCommentRequest,
-  PagedResult,
-  ApiError
 } from '@/types';
 
 export interface EvaluationState {
+  // Evaluations data
   evaluations: EvaluationListDto[];
-  currentEvaluation: EvaluationDetailDto | null;
+  currentEvaluation: EvaluationDto | null;
   evaluationForm: EvaluationFormDto | null;
-  evaluationSummaries: EvaluationListDto[];
-  scores: EvaluationScoreDto[];
-  comments: CommentDto[];
-  loading: {
-    evaluations: boolean;
-    evaluation: boolean;
-    form: boolean;
-    create: boolean;
-    update: boolean;
-    submit: boolean;
-    scores: boolean;
-    comments: boolean;
-  };
+  evaluationSummaries: EvaluationSummaryDto[];
+  
+  // Scores and comments
+  scores: Record<number, EvaluationScoreDto[]>; // keyed by evaluationId
+  comments: Record<number, CommentDto[]>; // keyed by scoreId
+  
+  // UI state
+  isLoading: boolean;
+  isCreating: boolean;
+  isUpdating: boolean;
+  isSubmitting: boolean;
   error: string | null;
+  
+  // Filters and pagination
   filters: {
     status?: string;
-    evaluatorId?: number;
-    employeeId?: number;
-    departmentId?: number;
     period?: string;
+    employeeId?: number;
+    evaluatorId?: number;
+    departmentId?: number;
   };
   pagination: {
     page: number;
     pageSize: number;
-    totalCount: number;
-    totalPages: number;
-    hasNextPage: boolean;
-    hasPreviousPage: boolean;
+    total: number;
   };
+  
+  // Cache timestamps
   lastFetch: Record<string, number>;
 }
 
@@ -59,19 +57,30 @@ export interface EvaluationActions {
   updateEvaluation: (id: number, data: UpdateEvaluationRequest) => Promise<void>;
   deleteEvaluation: (id: number) => Promise<void>;
   submitEvaluation: (id: number) => Promise<void>;
-
-  // Scores and comments
-  updateScore: (data: UpdateScoreRequest) => Promise<void>;
-  addComment: (data: AddCommentRequest) => Promise<CommentDto>;
-  updateComment: (id: number, data: UpdateCommentRequest) => Promise<void>;
-  deleteComment: (id: number) => Promise<void>;
-
-  // Utility actions
-  setError: (error: string | null) => void;
-  clearError: () => void;
-  setLoading: (key: keyof EvaluationState['loading'], loading: boolean) => void;
+  completeEvaluation: (id: number) => Promise<void>;
+  
+  // Score management
+  fetchScores: (evaluationId: number) => Promise<void>;
+  updateScore: (evaluationId: number, data: UpdateScoreRequest) => Promise<void>;
+  updateScoreOptimistic: (evaluationId: number, criteriaId: number, score: number) => void;
+  
+  // Comment management
+  fetchComments: (scoreId: number) => Promise<void>;
+  addComment: (data: AddCommentRequest) => Promise<void>;
+  updateComment: (commentId: number, data: UpdateCommentRequest) => Promise<void>;
+  deleteComment: (commentId: number) => Promise<void>;
+  addCommentOptimistic: (scoreId: number, description: string) => void;
+  
+  // UI state management
   setFilters: (filters: Partial<EvaluationState['filters']>) => void;
   setPagination: (pagination: Partial<EvaluationState['pagination']>) => void;
+  setError: (error: string | null) => void;
+  clearError: () => void;
+  setLoading: (loading: boolean) => void;
+  
+  // Cache management
+  invalidateCache: (key?: string) => void;
+  clearCurrentEvaluation: () => void;
   reset: () => void;
 }
 
