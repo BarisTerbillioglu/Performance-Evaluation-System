@@ -426,3 +426,5 @@ FodyWeavers.xsd
 *.msix
 *.msm
 *.msp
+performance-evaluation-frontend/
+**/node_modules/

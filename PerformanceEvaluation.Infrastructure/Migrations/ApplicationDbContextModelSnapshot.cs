@@ -593,7 +593,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                             FirstName = "System",
                             IsActive = true,
                             LastName = "Admin",
-                            PasswordHash = "$2a$11$jHdYFLCj6ZSra.Nd28WkleLeHH1MqBYQoLq.j/6mOfan0FPwasVkm"
+                            PasswordHash = "$2a$11$CK6kyeKPJUxSUjksh.SyD.qm2y1mtCmBoBsHtG5bUaghXL7TR00iS"
                         });
                 });
 

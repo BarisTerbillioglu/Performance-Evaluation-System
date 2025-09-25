@@ -63,18 +63,19 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Team",
+                name: "Teams",
                 columns: table => new
                 {
                     ID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Name = table.Column<string>(type: "nvarchar(100)", maxLength: 100, nullable: false),
                     Description = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: false),
-                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Team", x => x.ID);
+                    table.PrimaryKey("PK_Teams", x => x.ID);
                 });
 
             migrationBuilder.CreateTable(
@@ -165,6 +166,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     Period = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
                     StartDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EndDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
                     Status = table.Column<string>(type: "nvarchar(20)", maxLength: 20, nullable: false),
                     TotalScore = table.Column<decimal>(type: "decimal(5,2)", nullable: false),
                     GeneralComments = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: true),
@@ -185,7 +187,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                         column: x => x.EvaluatorID,
                         principalTable: "Users",
                         principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -197,16 +199,22 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     AssignedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     IsActive = table.Column<bool>(type: "bit", nullable: false),
                     EvaluatorID = table.Column<int>(type: "int", nullable: false),
-                    TeamID = table.Column<int>(type: "int", nullable: false),
-                    UserID = table.Column<int>(type: "int", nullable: true)
+                    EmployeeID = table.Column<int>(type: "int", nullable: false),
+                    TeamID = table.Column<int>(type: "int", nullable: false)
                 },
                 constraints: table =>
                 {
                     table.PrimaryKey("PK_EvaluatorAssignments", x => x.ID);
                     table.ForeignKey(
-                        name: "FK_EvaluatorAssignments_Team_TeamID",
+                        name: "FK_EvaluatorAssignments_Teams_TeamID",
                         column: x => x.TeamID,
-                        principalTable: "Team",
+                        principalTable: "Teams",
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_EvaluatorAssignments_Users_EmployeeID",
+                        column: x => x.EmployeeID,
+                        principalTable: "Users",
                         principalColumn: "ID",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
@@ -214,12 +222,34 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                         column: x => x.EvaluatorID,
                         principalTable: "Users",
                         principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Notifications",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    UserId = table.Column<int>(type: "int", nullable: false),
+                    Title = table.Column<string>(type: "nvarchar(200)", maxLength: 200, nullable: false),
+                    Message = table.Column<string>(type: "nvarchar(1000)", maxLength: 1000, nullable: false),
+                    Type = table.Column<string>(type: "nvarchar(50)", maxLength: 50, nullable: false),
+                    ActionUrl = table.Column<string>(type: "nvarchar(500)", maxLength: 500, nullable: true),
+                    IsRead = table.Column<bool>(type: "bit", nullable: false, defaultValue: false),
+                    CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false, defaultValueSql: "GETUTCDATE()"),
+                    ReadDate = table.Column<DateTime>(type: "datetime2", nullable: true),
+                    Metadata = table.Column<string>(type: "nvarchar(2000)", maxLength: 2000, nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Notifications", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_EvaluatorAssignments_Users_UserID",
-                        column: x => x.UserID,
+                        name: "FK_Notifications_Users_UserId",
+                        column: x => x.UserId,
                         principalTable: "Users",
-                        principalColumn: "ID");
+                        principalColumn: "ID",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -230,7 +260,8 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                         .Annotation("SqlServer:Identity", "1, 1"),
                     UserID = table.Column<int>(type: "int", nullable: false),
                     RoleID = table.Column<int>(type: "int", nullable: false),
-                    AssignedDate = table.Column<DateTime>(type: "datetime2", nullable: false)
+                    AssignedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -246,7 +277,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                         column: x => x.UserID,
                         principalTable: "Users",
                         principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -256,6 +287,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     ID = table.Column<int>(type: "int", nullable: false)
                         .Annotation("SqlServer:Identity", "1, 1"),
                     Score = table.Column<int>(type: "int", nullable: false),
+                    IsActive = table.Column<bool>(type: "bit", nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "datetime2", nullable: false),
                     EvaluationID = table.Column<int>(type: "int", nullable: false),
                     CriteriaID = table.Column<int>(type: "int", nullable: false)
@@ -274,7 +306,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                         column: x => x.EvaluationID,
                         principalTable: "Evaluations",
                         principalColumn: "ID",
-                        onDelete: ReferentialAction.Restrict);
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -321,15 +353,15 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
             migrationBuilder.InsertData(
                 table: "Users",
                 columns: new[] { "ID", "CreatedDate", "DepartmentID", "Email", "FirstName", "IsActive", "LastName", "PasswordHash", "UpdatedDate" },
-                values: new object[] { 1, new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), 1, "admin@vakifbank.com", "System", true, "Admin", "$2a$11$U3O2KBocQu5/eNWyq6HareEy7Z1QLjrgV783cpVlZxDEsAQodJe3K", null });
+                values: new object[] { 1, new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), 1, "admin@vakifbank.com", "System", true, "Admin", "$2a$11$CK6kyeKPJUxSUjksh.SyD.qm2y1mtCmBoBsHtG5bUaghXL7TR00iS", null });
 
             migrationBuilder.InsertData(
                 table: "RoleAssignments",
-                columns: new[] { "ID", "AssignedDate", "RoleID", "UserID" },
+                columns: new[] { "ID", "AssignedDate", "IsActive", "RoleID", "UserID" },
                 values: new object[,]
                 {
-                    { 1, new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), 1, 1 },
-                    { 2, new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), 5, 1 }
+                    { 1, new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), true, 1, 1 },
+                    { 2, new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc), true, 5, 1 }
                 });
 
             migrationBuilder.CreateIndex(
@@ -382,6 +414,11 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 column: "EvaluationID");
 
             migrationBuilder.CreateIndex(
+                name: "IX_EvaluatorAssignments_EmployeeID",
+                table: "EvaluatorAssignments",
+                column: "EmployeeID");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_EvaluatorAssignments_EvaluatorID",
                 table: "EvaluatorAssignments",
                 column: "EvaluatorID");
@@ -393,9 +430,19 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_EvaluatorAssignments_UserID",
-                table: "EvaluatorAssignments",
-                column: "UserID");
+                name: "IX_Notifications_CreatedDate",
+                table: "Notifications",
+                column: "CreatedDate");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notifications_Type",
+                table: "Notifications",
+                column: "Type");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Notifications_UserId_IsRead",
+                table: "Notifications",
+                columns: new[] { "UserId", "IsRead" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_RoleAssignments_RoleID",
@@ -425,6 +472,12 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Teams_Description",
+                table: "Teams",
+                column: "Description",
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_Users_DepartmentID",
                 table: "Users",
                 column: "DepartmentID");
@@ -446,6 +499,9 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 name: "EvaluatorAssignments");
 
             migrationBuilder.DropTable(
+                name: "Notifications");
+
+            migrationBuilder.DropTable(
                 name: "RoleAssignments");
 
             migrationBuilder.DropTable(
@@ -455,7 +511,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                 name: "EvaluationScores");
 
             migrationBuilder.DropTable(
-                name: "Team");
+                name: "Teams");
 
             migrationBuilder.DropTable(
                 name: "Roles");

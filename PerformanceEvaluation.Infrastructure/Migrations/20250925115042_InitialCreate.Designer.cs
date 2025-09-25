@@ -12,15 +12,15 @@ using PerformanceEvaluation.Infrastructure.Data;
 namespace PerformanceEvaluation.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20250817094855_YourMigrationName")]
-    partial class YourMigrationName
+    [Migration("20250925115042_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.8")
+                .HasAnnotation("ProductVersion", "8.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -197,6 +197,9 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("nvarchar(1000)");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Period")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -238,6 +241,9 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
 
                     b.Property<int>("EvaluationID")
                         .HasColumnType("int");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
 
                     b.Property<int>("Score")
                         .HasColumnType("int");
@@ -285,6 +291,67 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("EvaluatorAssignments");
+                });
+
+            modelBuilder.Entity("PerformanceEvaluation.Core.Entities.Notification", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("ActionUrl")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<DateTime>("CreatedDate")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("datetime2")
+                        .HasDefaultValueSql("GETUTCDATE()");
+
+                    b.Property<bool>("IsRead")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bit")
+                        .HasDefaultValue(false);
+
+                    b.Property<string>("Message")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)");
+
+                    b.Property<string>("Metadata")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("ReadDate")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("Title")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("nvarchar(200)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CreatedDate")
+                        .HasDatabaseName("IX_Notifications_CreatedDate");
+
+                    b.HasIndex("Type")
+                        .HasDatabaseName("IX_Notifications_Type");
+
+                    b.HasIndex("UserId", "IsRead")
+                        .HasDatabaseName("IX_Notifications_UserId_IsRead");
+
+                    b.ToTable("Notifications");
                 });
 
             modelBuilder.Entity("PerformanceEvaluation.Core.Entities.Role", b =>
@@ -370,6 +437,9 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.Property<DateTime>("AssignedDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
                     b.Property<int>("RoleID")
                         .HasColumnType("int");
 
@@ -390,6 +460,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                         {
                             ID = 1,
                             AssignedDate = new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
                             RoleID = 1,
                             UserID = 1
                         },
@@ -397,6 +468,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                         {
                             ID = 2,
                             AssignedDate = new DateTime(2025, 7, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            IsActive = true,
                             RoleID = 5,
                             UserID = 1
                         });
@@ -463,7 +535,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.HasIndex("Description")
                         .IsUnique();
 
-                    b.ToTable("Team");
+                    b.ToTable("Teams");
                 });
 
             modelBuilder.Entity("PerformanceEvaluation.Core.Entities.User", b =>
@@ -524,7 +596,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                             FirstName = "System",
                             IsActive = true,
                             LastName = "Admin",
-                            PasswordHash = "$2a$11$RG4s4bsGIi5uI1V6W5EDUuDkKKAbB/71u5MwEWh85L7tBFKfi3qZ6"
+                            PasswordHash = "$2a$11$CK6kyeKPJUxSUjksh.SyD.qm2y1mtCmBoBsHtG5bUaghXL7TR00iS"
                         });
                 });
 
@@ -561,7 +633,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.HasOne("PerformanceEvaluation.Core.Entities.User", "Evaluator")
                         .WithMany("EvaluatorEvaluations")
                         .HasForeignKey("EvaluatorID")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Employee");
@@ -580,7 +652,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.HasOne("PerformanceEvaluation.Core.Entities.Evaluation", "Evaluation")
                         .WithMany("EvaluationScores")
                         .HasForeignKey("EvaluationID")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Criteria");
@@ -599,7 +671,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.HasOne("PerformanceEvaluation.Core.Entities.User", "Evaluator")
                         .WithMany("EvaluatorAssignments")
                         .HasForeignKey("EvaluatorID")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("PerformanceEvaluation.Core.Entities.Team", "Team")
@@ -615,6 +687,17 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.Navigation("Team");
                 });
 
+            modelBuilder.Entity("PerformanceEvaluation.Core.Entities.Notification", b =>
+                {
+                    b.HasOne("PerformanceEvaluation.Core.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("PerformanceEvaluation.Core.Entities.RoleAssignment", b =>
                 {
                     b.HasOne("PerformanceEvaluation.Core.Entities.Role", "Role")
@@ -626,7 +709,7 @@ namespace PerformanceEvaluation.Infrastructure.Migrations
                     b.HasOne("PerformanceEvaluation.Core.Entities.User", "User")
                         .WithMany("RoleAssignments")
                         .HasForeignKey("UserID")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Role");
