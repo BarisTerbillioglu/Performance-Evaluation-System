@@ -1,88 +1,46 @@
-// Service Worker for Performance Evaluation System
-// Provides offline functionality, caching, and performance optimization
-
-const CACHE_NAME = 'performance-evaluation-v1.0.0';
-const STATIC_CACHE = 'static-v1.0.0';
-const DYNAMIC_CACHE = 'dynamic-v1.0.0';
-const API_CACHE = 'api-v1.0.0';
+const CACHE_NAME = 'performance-evaluation-v1';
+const STATIC_CACHE = 'static-v1';
+const DYNAMIC_CACHE = 'dynamic-v1';
 
 // Files to cache immediately
 const STATIC_FILES = [
   '/',
   '/index.html',
-  '/manifest.json',
   '/static/js/bundle.js',
   '/static/css/main.css',
+  '/manifest.json',
   '/favicon.ico',
-  '/logo192.png',
-  '/logo512.png',
 ];
 
-// API endpoints to cache
-const API_ENDPOINTS = [
-  '/api/auth/me',
-  '/api/dashboard/overview',
-  '/api/user',
-  '/api/department',
-  '/api/criteria',
-];
-
-// ============================================================================
-// INSTALL EVENT
-// ============================================================================
-
+// Install event - cache static files
 self.addEventListener('install', (event) => {
-  console.log('[SW] Installing service worker...');
-  
   event.waitUntil(
-    caches.open(STATIC_CACHE)
-      .then((cache) => {
-        console.log('[SW] Caching static files');
-        return cache.addAll(STATIC_FILES);
-      })
-      .then(() => {
-        console.log('[SW] Static files cached successfully');
-        return self.skipWaiting();
-      })
-      .catch((error) => {
-        console.error('[SW] Error caching static files:', error);
-      })
+    caches.open(STATIC_CACHE).then((cache) => {
+      return cache.addAll(STATIC_FILES);
+    })
   );
+  self.skipWaiting();
 });
 
-// ============================================================================
-// ACTIVATE EVENT
-// ============================================================================
-
+// Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
-  console.log('[SW] Activating service worker...');
-  
   event.waitUntil(
-    caches.keys()
-      .then((cacheNames) => {
-        return Promise.all(
-          cacheNames.map((cacheName) => {
-            // Delete old caches
-            if (cacheName !== STATIC_CACHE && 
-                cacheName !== DYNAMIC_CACHE && 
-                cacheName !== API_CACHE) {
-              console.log('[SW] Deleting old cache:', cacheName);
-              return caches.delete(cacheName);
-            }
+    caches.keys().then((cacheNames) => {
+      return Promise.all(
+        cacheNames
+          .filter((cacheName) => {
+            return cacheName !== STATIC_CACHE && cacheName !== DYNAMIC_CACHE;
           })
-        );
-      })
-      .then(() => {
-        console.log('[SW] Service worker activated');
-        return self.clients.claim();
-      })
+          .map((cacheName) => {
+            return caches.delete(cacheName);
+          })
+      );
+    })
   );
+  self.clients.claim();
 });
 
-// ============================================================================
-// FETCH EVENT
-// ============================================================================
-
+// Fetch event - serve from cache or network
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -92,40 +50,39 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Handle different types of requests
+  // Handle API requests
   if (url.pathname.startsWith('/api/')) {
-    // API requests - use network first with cache fallback
     event.respondWith(handleApiRequest(request));
-  } else if (isStaticAsset(url.pathname)) {
-    // Static assets - use cache first with network fallback
-    event.respondWith(handleStaticRequest(request));
-  } else {
-    // HTML pages - use network first with cache fallback
-    event.respondWith(handlePageRequest(request));
+    return;
+  }
+
+  // Handle static assets
+  if (isStaticAsset(url.pathname)) {
+    event.respondWith(handleStaticAsset(request));
+    return;
+  }
+
+  // Handle navigation requests
+  if (request.mode === 'navigate') {
+    event.respondWith(handleNavigation(request));
+    return;
   }
 });
 
-// ============================================================================
-// REQUEST HANDLERS
-// ============================================================================
-
 async function handleApiRequest(request) {
   try {
-    // Try network first
+    // Try network first for API requests
     const networkResponse = await fetch(request);
     
+    // Cache successful responses
     if (networkResponse.ok) {
-      // Cache successful API responses
-      const cache = await caches.open(API_CACHE);
+      const cache = await caches.open(DYNAMIC_CACHE);
       cache.put(request, networkResponse.clone());
-      return networkResponse;
     }
     
-    throw new Error('Network response not ok');
+    return networkResponse;
   } catch (error) {
-    console.log('[SW] Network failed, trying cache for API:', request.url);
-    
-    // Fallback to cache
+    // Fallback to cache if network fails
     const cachedResponse = await caches.match(request);
     if (cachedResponse) {
       return cachedResponse;
@@ -133,264 +90,121 @@ async function handleApiRequest(request) {
     
     // Return offline response for API requests
     return new Response(
-      JSON.stringify({ 
-        error: 'Offline mode', 
-        message: 'Please check your internet connection' 
-      }),
+      JSON.stringify({ error: 'Network error', offline: true }),
       {
         status: 503,
-        statusText: 'Service Unavailable',
-        headers: { 'Content-Type': 'application/json' }
+        headers: { 'Content-Type': 'application/json' },
       }
     );
   }
 }
 
-async function handleStaticRequest(request) {
+async function handleStaticAsset(request) {
+  // Check cache first for static assets
+  const cachedResponse = await caches.match(request);
+  if (cachedResponse) {
+    return cachedResponse;
+  }
+
   try {
-    // Try cache first
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    
     // Fallback to network
     const networkResponse = await fetch(request);
     if (networkResponse.ok) {
-      // Cache the response for next time
-      const cache = await caches.open(DYNAMIC_CACHE);
+      const cache = await caches.open(STATIC_CACHE);
       cache.put(request, networkResponse.clone());
     }
-    
     return networkResponse;
   } catch (error) {
-    console.log('[SW] Cache and network failed for static asset:', request.url);
-    
-    // Return offline page for navigation requests
-    if (request.destination === 'document') {
-      return caches.match('/offline.html');
-    }
-    
-    throw error;
-  }
-}
-
-async function handlePageRequest(request) {
-  try {
-    // Try network first for pages
-    const networkResponse = await fetch(request);
-    
-    if (networkResponse.ok) {
-      // Cache successful page responses
-      const cache = await caches.open(DYNAMIC_CACHE);
-      cache.put(request, networkResponse.clone());
-      return networkResponse;
-    }
-    
-    throw new Error('Network response not ok');
-  } catch (error) {
-    console.log('[SW] Network failed, trying cache for page:', request.url);
-    
-    // Fallback to cache
-    const cachedResponse = await caches.match(request);
-    if (cachedResponse) {
-      return cachedResponse;
-    }
-    
-    // Return offline page
+    // Return offline page for static assets
     return caches.match('/offline.html');
   }
 }
 
-// ============================================================================
-// UTILITY FUNCTIONS
-// ============================================================================
+async function handleNavigation(request) {
+  try {
+    // Try network first for navigation
+    const networkResponse = await fetch(request);
+    if (networkResponse.ok) {
+      return networkResponse;
+    }
+  } catch (error) {
+    // Network failed, continue to cache check
+  }
 
-function isStaticAsset(pathname) {
-  const staticExtensions = [
-    '.js', '.css', '.png', '.jpg', '.jpeg', '.gif', '.svg', 
-    '.ico', '.woff', '.woff2', '.ttf', '.eot', '.mp4', '.webm'
-  ];
-  
-  return staticExtensions.some(ext => pathname.endsWith(ext));
+  // Check cache for navigation
+  const cachedResponse = await caches.match(request);
+  if (cachedResponse) {
+    return cachedResponse;
+  }
+
+  // Return offline page
+  return caches.match('/offline.html');
 }
 
-// ============================================================================
-// BACKGROUND SYNC
-// ============================================================================
+function isStaticAsset(pathname) {
+  return (
+    pathname.startsWith('/static/') ||
+    pathname.startsWith('/assets/') ||
+    pathname.includes('.js') ||
+    pathname.includes('.css') ||
+    pathname.includes('.png') ||
+    pathname.includes('.jpg') ||
+    pathname.includes('.jpeg') ||
+    pathname.includes('.gif') ||
+    pathname.includes('.svg') ||
+    pathname.includes('.ico')
+  );
+}
 
+// Background sync for offline actions
 self.addEventListener('sync', (event) => {
-  console.log('[SW] Background sync triggered:', event.tag);
-  
   if (event.tag === 'background-sync') {
-    event.waitUntil(performBackgroundSync());
+    event.waitUntil(doBackgroundSync());
   }
 });
 
-async function performBackgroundSync() {
-  try {
-    // Sync pending data when connection is restored
-    const pendingData = await getPendingData();
-    
-    for (const data of pendingData) {
-      try {
-        await syncData(data);
-        await removePendingData(data.id);
-      } catch (error) {
-        console.error('[SW] Failed to sync data:', error);
-      }
-    }
-  } catch (error) {
-    console.error('[SW] Background sync failed:', error);
-  }
+async function doBackgroundSync() {
+  // Implement background sync logic here
+  // For example, sync pending evaluations, comments, etc.
+  console.log('Background sync triggered');
 }
 
-// ============================================================================
-// PUSH NOTIFICATIONS
-// ============================================================================
-
+// Push notification handling
 self.addEventListener('push', (event) => {
-  console.log('[SW] Push notification received');
-  
   const options = {
     body: event.data ? event.data.text() : 'New notification',
-    icon: '/logo192.png',
-    badge: '/logo192.png',
+    icon: '/favicon.ico',
+    badge: '/favicon.ico',
     vibrate: [100, 50, 100],
     data: {
       dateOfArrival: Date.now(),
-      primaryKey: 1
+      primaryKey: 1,
     },
     actions: [
       {
         action: 'explore',
         title: 'View',
-        icon: '/logo192.png'
+        icon: '/favicon.ico',
       },
       {
         action: 'close',
         title: 'Close',
-        icon: '/logo192.png'
-      }
-    ]
+        icon: '/favicon.ico',
+      },
+    ],
   };
-  
+
   event.waitUntil(
-    self.registration.showNotification('Performance Evaluation System', options)
+    self.registration.showNotification('Performance Evaluation', options)
   );
 });
 
 self.addEventListener('notificationclick', (event) => {
-  console.log('[SW] Notification clicked:', event.action);
-  
   event.notification.close();
-  
+
   if (event.action === 'explore') {
     event.waitUntil(
-      clients.openWindow('/')
+      clients.openWindow('/dashboard')
     );
   }
 });
-
-// ============================================================================
-// MESSAGE HANDLING
-// ============================================================================
-
-self.addEventListener('message', (event) => {
-  console.log('[SW] Message received:', event.data);
-  
-  if (event.data && event.data.type === 'SKIP_WAITING') {
-    self.skipWaiting();
-  }
-  
-  if (event.data && event.data.type === 'CACHE_API_RESPONSE') {
-    event.waitUntil(
-      cacheApiResponse(event.data.url, event.data.response)
-    );
-  }
-});
-
-async function cacheApiResponse(url, response) {
-  try {
-    const cache = await caches.open(API_CACHE);
-    const request = new Request(url);
-    await cache.put(request, new Response(JSON.stringify(response), {
-      headers: { 'Content-Type': 'application/json' }
-    }));
-    console.log('[SW] API response cached:', url);
-  } catch (error) {
-    console.error('[SW] Failed to cache API response:', error);
-  }
-}
-
-// ============================================================================
-// CACHE MANAGEMENT
-// ============================================================================
-
-async function getPendingData() {
-  // Implementation for getting pending data from IndexedDB
-  return [];
-}
-
-async function syncData(data) {
-  // Implementation for syncing data with server
-  const response = await fetch('/api/sync', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-  });
-  
-  if (!response.ok) {
-    throw new Error('Sync failed');
-  }
-  
-  return response.json();
-}
-
-async function removePendingData(id) {
-  // Implementation for removing synced data from IndexedDB
-}
-
-// ============================================================================
-// CACHE CLEANUP
-// ============================================================================
-
-async function cleanupOldCaches() {
-  const cacheNames = await caches.keys();
-  const currentCaches = [STATIC_CACHE, DYNAMIC_CACHE, API_CACHE];
-  
-  for (const cacheName of cacheNames) {
-    if (!currentCaches.includes(cacheName)) {
-      await caches.delete(cacheName);
-      console.log('[SW] Deleted old cache:', cacheName);
-    }
-  }
-}
-
-// Run cleanup periodically
-setInterval(cleanupOldCaches, 24 * 60 * 60 * 1000); // Daily
-
-// ============================================================================
-// ERROR HANDLING
-// ============================================================================
-
-self.addEventListener('error', (event) => {
-  console.error('[SW] Service worker error:', event.error);
-});
-
-self.addEventListener('unhandledrejection', (event) => {
-  console.error('[SW] Unhandled promise rejection:', event.reason);
-});
-
-// ============================================================================
-// DEBUGGING
-// ============================================================================
-
-if (process.env.NODE_ENV === 'development') {
-  self.addEventListener('install', (event) => {
-    console.log('[SW] Development mode - skipping waiting');
-    self.skipWaiting();
-  });
-}
-
-console.log('[SW] Service worker script loaded');

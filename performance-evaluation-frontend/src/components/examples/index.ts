@@ -1,8 +1,8 @@
-export { LoginForm } from './LoginForm';
-export { DashboardHeader } from './DashboardHeader';
-export { DashboardCards } from './DashboardCards';
-export { DataTable } from './DataTable';
-export { SidebarNavigation } from './SidebarNavigation';
-export { ModalExample } from './ModalExample';
-export { VakifBankDashboard } from './VakifBankDashboard';
-export { OptimizedUserList } from './OptimizedUserList';
+// Design System Examples
+export { default as LoginForm } from './LoginForm';
+export { default as DashboardHeader } from './DashboardHeader';
+export { default as DataTable } from './DataTable';
+export { default as DashboardCards } from './DashboardCards';
+export { default as SidebarNavigation } from './SidebarNavigation';
+export { default as ModalExample } from './ModalExample';
+export { default as VakifBankDashboard } from './VakifBankDashboard';

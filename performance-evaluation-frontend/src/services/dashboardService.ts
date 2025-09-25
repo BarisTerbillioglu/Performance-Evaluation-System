@@ -1,44 +1,78 @@
 import { apiClient } from './api';
-import { 
-  DashboardOverviewDto,
-  AdminStatisticsDto,
-  TeamPerformanceDto,
-  PersonalPerformanceDto
+import {
+  AdminDashboardDto,
+  EmployeeDashboardDto,
+  EvaluatorDashboardDto,
 } from '@/types';
 
 export const dashboardService = {
   /**
-   * Get dashboard overview
+   * Get dashboard overview for current user
    */
-  getDashboardOverview: async (): Promise<DashboardOverviewDto> => {
-    return await apiClient.get<DashboardOverviewDto>('/api/dashboard/overview');
+  getDashboardOverview: async (): Promise<AdminDashboardDto | EmployeeDashboardDto | EvaluatorDashboardDto> => {
+    return await apiClient.get('/api/dashboard/overview');
   },
 
   /**
-   * Get admin statistics
+   * Get admin dashboard data
    */
-  getAdminStatistics: async (): Promise<AdminStatisticsDto> => {
-    return await apiClient.get<AdminStatisticsDto>('/api/dashboard/admin-stats');
+  getAdminDashboard: async (): Promise<AdminDashboardDto> => {
+    return await apiClient.get<AdminDashboardDto>('/api/dashboard/admin');
   },
 
   /**
-   * Get admin dashboard (alias for getAdminStatistics)
+   * Get employee dashboard data
    */
-  getAdminDashboard: async (): Promise<AdminStatisticsDto> => {
-    return await apiClient.get<AdminStatisticsDto>('/api/dashboard/admin-stats');
+  getEmployeeDashboard: async (): Promise<EmployeeDashboardDto> => {
+    return await apiClient.get<EmployeeDashboardDto>('/api/dashboard/employee');
   },
 
   /**
-   * Get team performance (for evaluators)
+   * Get evaluator dashboard data
    */
-  getTeamPerformance: async (): Promise<TeamPerformanceDto> => {
-    return await apiClient.get<TeamPerformanceDto>('/api/dashboard/team-performance');
+  getEvaluatorDashboard: async (): Promise<EvaluatorDashboardDto> => {
+    return await apiClient.get<EvaluatorDashboardDto>('/api/dashboard/evaluator');
   },
 
   /**
-   * Get personal performance (for employees)
+   * Get dashboard statistics
    */
-  getPersonalPerformance: async (): Promise<PersonalPerformanceDto> => {
-    return await apiClient.get<PersonalPerformanceDto>('/api/dashboard/personal-performance');
+  getDashboardStats: async (): Promise<{
+    totalEvaluations: number;
+    completedEvaluations: number;
+    pendingEvaluations: number;
+    overdueEvaluations: number;
+  }> => {
+    return await apiClient.get('/api/dashboard/stats');
+  },
+
+  /**
+   * Get recent activity
+   */
+  getRecentActivity: async (limit = 10): Promise<{
+    id: number;
+    userId: number;
+    userName: string;
+    action: string;
+    entityType: string;
+    entityId: number;
+    timestamp: string;
+    details?: string;
+  }[]> => {
+    return await apiClient.get('/api/dashboard/recent-activity', { limit });
+  },
+
+  /**
+   * Get system alerts
+   */
+  getSystemAlerts: async (): Promise<{
+    id: number;
+    type: 'Warning' | 'Error' | 'Info';
+    title: string;
+    message: string;
+    timestamp: string;
+    isResolved: boolean;
+  }[]> => {
+    return await apiClient.get('/api/dashboard/alerts');
   },
 };

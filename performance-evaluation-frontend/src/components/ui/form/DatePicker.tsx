@@ -82,13 +82,6 @@ const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(
       );
     };
 
-    // Convert size to number for Input component
-    const getInputSize = (): "sm" | "md" | "lg" => {
-      if (size === 'sm') return 'sm';
-      if (size === 'lg') return 'lg';
-      return 'md';
-    };
-
     return (
       <div className="relative">
         <Input
@@ -101,7 +94,7 @@ const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(
           error={error}
           disabled={disabled}
           required={required}
-          size={getInputSize()}
+          size={size}
           className={className}
           rightIcon={
             <Button
@@ -165,7 +158,16 @@ const DatePicker = forwardRef<HTMLInputElement, DatePickerProps>(
                   day_hidden: 'invisible',
                 }}
                 components={{
-                  // Remove custom components that cause type errors
+                  IconLeft: ({ ...props }) => (
+                    <svg {...props} className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="15,18 9,12 15,6" />
+                    </svg>
+                  ),
+                  IconRight: ({ ...props }) => (
+                    <svg {...props} className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                      <polyline points="9,18 15,12 9,6" />
+                    </svg>
+                  ),
                 }}
               />
             </div>

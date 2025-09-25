@@ -1,25 +1,22 @@
 import { apiClient } from './api';
-import { 
-  TeamDto, 
+import {
+  TeamDto,
   TeamWithMembersDto,
-  TeamDashboardStatsDto,
-  TeamPerformanceAnalyticsDto,
-  TeamAnalyticsDto,
-  TeamStatisticsDto,
-  TeamMemberDto,
-  AvailableUserDto,
-  CreateTeamRequest, 
+  TeamAssignmentDto,
+  CreateTeamRequest,
   UpdateTeamRequest,
   AssignEmployeeRequest,
   AssignEvaluatorRequest,
+  UpdateUserTeamRequest,
+  TeamAnalyticsDto,
+  TeamHierarchyDto,
+  TeamPerformanceMetricsDto,
   BulkTeamOperationRequest,
   BulkMemberTransferRequest,
   BulkTeamAssignmentRequest,
   TeamSearchRequest,
-  TeamTemplateDto,
-  TeamAnnouncementDto,
-  TeamGoalDto,
-  MemberPerformanceTrendDto
+  TeamStatisticsDto,
+  UserSummaryDto,
 } from '@/types';
 
 export const teamService = {
@@ -31,6 +28,13 @@ export const teamService = {
   },
 
   /**
+   * Search teams with filters
+   */
+  searchTeams: async (request: TeamSearchRequest): Promise<TeamWithMembersDto[]> => {
+    return await apiClient.get<TeamWithMembersDto[]>('/api/team/search', request);
+  },
+
+  /**
    * Get team by ID
    */
   getTeamById: async (id: number): Promise<TeamDto> => {
@@ -38,17 +42,66 @@ export const teamService = {
   },
 
   /**
+   * Get team with members
+   */
+  getTeamWithMembers: async (id: number): Promise<TeamWithMembersDto> => {
+    return await apiClient.get<TeamWithMembersDto>(`/api/team/${id}/with-members`);
+  },
+
+  /**
+   * Get all teams with members
+   */
+  getTeamsWithMembers: async (): Promise<TeamWithMembersDto[]> => {
+    return await apiClient.get<TeamWithMembersDto[]>('/api/team/with-members');
+  },
+
+  /**
+   * Get team analytics
+   */
+  getTeamAnalytics: async (teamId: number): Promise<TeamAnalyticsDto> => {
+    return await apiClient.get<TeamAnalyticsDto>(`/api/team/${teamId}/analytics`);
+  },
+
+  /**
+   * Get all teams analytics
+   */
+  getAllTeamsAnalytics: async (): Promise<TeamAnalyticsDto[]> => {
+    return await apiClient.get<TeamAnalyticsDto[]>('/api/team/analytics');
+  },
+
+  /**
+   * Get team performance metrics
+   */
+  getTeamPerformanceMetrics: async (teamId: number, period: string): Promise<TeamPerformanceMetricsDto> => {
+    return await apiClient.get<TeamPerformanceMetricsDto>(`/api/team/${teamId}/performance`, { period });
+  },
+
+  /**
+   * Get team hierarchy
+   */
+  getTeamHierarchy: async (): Promise<TeamHierarchyDto[]> => {
+    return await apiClient.get<TeamHierarchyDto[]>('/api/team/hierarchy');
+  },
+
+  /**
+   * Get team statistics
+   */
+  getTeamStatistics: async (): Promise<TeamStatisticsDto> => {
+    return await apiClient.get<TeamStatisticsDto>('/api/team/statistics');
+  },
+
+  /**
    * Create new team
    */
-  createTeam: async (teamData: CreateTeamRequest): Promise<TeamDto> => {
-    return await apiClient.post<TeamDto>('/api/team', teamData);
+  createTeam: async (team: CreateTeamRequest): Promise<TeamDto> => {
+    return await apiClient.post<TeamDto>('/api/team', team);
   },
 
   /**
    * Update team
    */
-  updateTeam: async (id: number, teamData: UpdateTeamRequest): Promise<TeamDto> => {
-    return await apiClient.put<TeamDto>(`/api/team/${id}`, teamData);
+  updateTeam: async (id: number, team: UpdateTeamRequest): Promise<TeamDto> => {
+    return await apiClient.put<TeamDto>(`/api/team/${id}`, team);
   },
 
   /**
@@ -59,210 +112,122 @@ export const teamService = {
   },
 
   /**
-   * Get teams with members (for admin view)
-   */
-  getTeamsWithMembers: async (): Promise<TeamWithMembersDto[]> => {
-    return await apiClient.get<TeamWithMembersDto[]>('/api/team/with-members');
-  },
-
-  /**
-   * Get team members
-   */
-  getTeamMembers: async (teamId: number): Promise<TeamMemberDto[]> => {
-    return await apiClient.get<TeamMemberDto[]>(`/api/team/${teamId}/members`);
-  },
-
-  /**
-   * Add member to team
-   */
-  addTeamMember: async (teamId: number, request: AssignEmployeeRequest): Promise<{ message: string }> => {
-    return await apiClient.post<{ message: string }>(`/api/team/${teamId}/members`, request);
-  },
-
-  /**
-   * Assign employee to team (alias for addTeamMember)
+   * Assign employee to team
    */
   assignEmployee: async (teamId: number, request: AssignEmployeeRequest): Promise<{ message: string }> => {
-    return await apiClient.post<{ message: string }>(`/api/team/${teamId}/members`, request);
-  },
-
-  /**
-   * Remove member from team
-   */
-  removeTeamMember: async (teamId: number, userId: number): Promise<{ message: string }> => {
-    return await apiClient.delete<{ message: string }>(`/api/team/${teamId}/members/${userId}`);
-  },
-
-  /**
-   * Remove user from team (alias for removeTeamMember)
-   */
-  removeUserFromTeam: async (teamId: number, userId: number): Promise<{ message: string }> => {
-    return await apiClient.delete<{ message: string }>(`/api/team/${teamId}/members/${userId}`);
+    return await apiClient.post<{ message: string }>(`/api/team/${teamId}/assign-employee`, request);
   },
 
   /**
    * Assign evaluator to team
    */
   assignEvaluator: async (teamId: number, request: AssignEvaluatorRequest): Promise<{ message: string }> => {
-    return await apiClient.post<{ message: string }>(`/api/team/${teamId}/evaluator`, request);
+    return await apiClient.post<{ message: string }>(`/api/team/${teamId}/assign-evaluator`, request);
   },
 
   /**
-   * Get team dashboard statistics (for evaluator)
+   * Remove user from team
    */
-  getTeamDashboardStats: async (): Promise<TeamDashboardStatsDto> => {
-    return await apiClient.get<TeamDashboardStatsDto>('/api/dashboard/team-performance');
+  removeUserFromTeam: async (teamId: number, userId: number): Promise<{ message: string }> => {
+    return await apiClient.delete<{ message: string }>(`/api/team/${teamId}/remove-user/${userId}`);
   },
 
   /**
-   * Get team performance analytics
+   * Update user team assignment
    */
-  getTeamPerformanceAnalytics: async (teamId: number, period?: string): Promise<TeamPerformanceAnalyticsDto> => {
-    const params = period ? `?period=${period}` : '';
-    return await apiClient.get<TeamPerformanceAnalyticsDto>(`/api/team/${teamId}/analytics${params}`);
+  updateUserTeam: async (teamId: number, userId: number, request: UpdateUserTeamRequest): Promise<{ message: string }> => {
+    return await apiClient.put<{ message: string }>(`/api/team/${teamId}/user/${userId}`, request);
   },
 
   /**
-   * Get team statistics (for admin)
+   * Get team members
    */
-  getTeamStatistics: async (): Promise<TeamStatisticsDto> => {
-    return await apiClient.get<TeamStatisticsDto>('/api/team/statistics');
+  getTeamMembers: async (teamId: number): Promise<TeamAssignmentDto[]> => {
+    return await apiClient.get<TeamAssignmentDto[]>(`/api/team/${teamId}/members`);
   },
 
   /**
-   * Get available users for team assignment
+   * Get user teams
    */
-  getAvailableUsers: async (): Promise<AvailableUserDto[]> => {
-    return await apiClient.get<AvailableUserDto[]>('/api/user/available-for-team');
+  getUserTeams: async (userId: number): Promise<TeamAssignmentDto[]> => {
+    return await apiClient.get<TeamAssignmentDto[]>(`/api/team/user/${userId}`);
   },
 
   /**
-   * Get evaluators for team assignment
+   * Get active teams
    */
-  getEvaluators: async (): Promise<AvailableUserDto[]> => {
-    return await apiClient.get<AvailableUserDto[]>('/api/user/evaluators');
+  getActiveTeams: async (): Promise<TeamDto[]> => {
+    return await apiClient.get<TeamDto[]>('/api/team/active');
   },
 
   /**
-   * Assign user to team
+   * Activate team
    */
-  assignUserToTeam: async (userId: number, teamId: number, role?: string): Promise<{ message: string }> => {
-    return await apiClient.put<{ message: string }>(`/api/user/${userId}/team`, { teamId, role });
+  activateTeam: async (id: number): Promise<{ message: string }> => {
+    return await apiClient.put<{ message: string }>(`/api/team/${id}/activate`);
+  },
+
+  /**
+   * Deactivate team
+   */
+  deactivateTeam: async (id: number): Promise<{ message: string }> => {
+    return await apiClient.put<{ message: string }>(`/api/team/${id}/deactivate`);
   },
 
   /**
    * Bulk team operations
    */
-  bulkTeamOperation: async (request: BulkTeamOperationRequest): Promise<{ message: string }> => {
-    return await apiClient.post<{ message: string }>('/api/team/bulk-operations', request);
+  bulkTeamOperations: async (request: BulkTeamOperationRequest): Promise<{ message: string; results: any[] }> => {
+    return await apiClient.post<{ message: string; results: any[] }>('/api/team/bulk-operations', request);
   },
 
   /**
-   * Bulk member transfer
+   * Bulk member transfer between teams
    */
-  bulkMemberTransfer: async (request: BulkMemberTransferRequest): Promise<{ message: string }> => {
-    return await apiClient.post<{ message: string }>('/api/team/bulk-transfer', request);
+  bulkMemberTransfer: async (request: BulkMemberTransferRequest): Promise<{ message: string; results: any[] }> => {
+    return await apiClient.post<{ message: string; results: any[] }>('/api/team/bulk-transfer', request);
   },
 
   /**
    * Bulk team assignment
    */
-  bulkTeamAssignment: async (request: BulkTeamAssignmentRequest): Promise<{ message: string }> => {
-    return await apiClient.post<{ message: string }>('/api/team/bulk-assignment', request);
+  bulkTeamAssignment: async (request: BulkTeamAssignmentRequest): Promise<{ message: string; results: any[] }> => {
+    return await apiClient.post<{ message: string; results: any[] }>('/api/team/bulk-assignment', request);
   },
 
   /**
-   * Search teams with filters
+   * Transfer member between teams
    */
-  searchTeams: async (request: TeamSearchRequest): Promise<{ data: TeamWithMembersDto[], totalCount: number }> => {
-    return await apiClient.post<{ data: TeamWithMembersDto[], totalCount: number }>('/api/team/search', request);
-  },
-
-  /**
-   * Get team templates
-   */
-  getTeamTemplates: async (): Promise<TeamTemplateDto[]> => {
-    return await apiClient.get<TeamTemplateDto[]>('/api/team/templates');
-  },
-
-  /**
-   * Create team from template
-   */
-  createTeamFromTemplate: async (templateId: number, teamData: CreateTeamRequest): Promise<TeamDto> => {
-    return await apiClient.post<TeamDto>(`/api/team/templates/${templateId}/create`, teamData);
-  },
-
-  /**
-   * Get team announcements
-   */
-  getTeamAnnouncements: async (teamId: number): Promise<TeamAnnouncementDto[]> => {
-    return await apiClient.get<TeamAnnouncementDto[]>(`/api/team/${teamId}/announcements`);
-  },
-
-  /**
-   * Create team announcement
-   */
-  createTeamAnnouncement: async (teamId: number, announcement: Omit<TeamAnnouncementDto, 'id' | 'teamId' | 'createdBy' | 'createdAt'>): Promise<TeamAnnouncementDto> => {
-    return await apiClient.post<TeamAnnouncementDto>(`/api/team/${teamId}/announcements`, announcement);
-  },
-
-  /**
-   * Get team goals
-   */
-  getTeamGoals: async (teamId: number): Promise<TeamGoalDto[]> => {
-    return await apiClient.get<TeamGoalDto[]>(`/api/team/${teamId}/goals`);
-  },
-
-  /**
-   * Create team goal
-   */
-  createTeamGoal: async (teamId: number, goal: Omit<TeamGoalDto, 'id' | 'teamId' | 'createdBy' | 'createdAt'>): Promise<TeamGoalDto> => {
-    return await apiClient.post<TeamGoalDto>(`/api/team/${teamId}/goals`, goal);
-  },
-
-  /**
-   * Get member performance trend
-   */
-  getMemberPerformanceTrend: async (teamId: number, userId: number): Promise<MemberPerformanceTrendDto> => {
-    return await apiClient.get<MemberPerformanceTrendDto>(`/api/team/${teamId}/members/${userId}/performance-trend`);
-  },
-
-  /**
-   * Export team data
-   */
-  exportTeamData: async (teamId: number, format: 'csv' | 'excel' = 'excel'): Promise<Blob> => {
-    const response = await apiClient.get(`/api/team/${teamId}/export?format=${format}`, {
-      responseType: 'blob'
+  transferMember: async (userId: number, sourceTeamId: number, targetTeamId: number, newRole?: string): Promise<{ message: string }> => {
+    return await apiClient.post<{ message: string }>('/api/team/transfer-member', {
+      userId,
+      sourceTeamId,
+      targetTeamId,
+      newRole,
     });
-    return response;
   },
 
   /**
-   * Get team evaluations
+   * Get available evaluators for team
    */
-  getTeamEvaluations: async (teamId: number, status?: string): Promise<any[]> => {
-    const params = status ? `?teamId=${teamId}&status=${status}` : `?teamId=${teamId}`;
-    return await apiClient.get<any[]>(`/api/evaluation${params}`);
+  getAvailableEvaluators: async (teamId: number): Promise<UserSummaryDto[]> => {
+    return await apiClient.get<UserSummaryDto[]>(`/api/team/${teamId}/available-evaluators`);
   },
 
   /**
-   * Create evaluations for entire team
+   * Get available employees for team
    */
-  createTeamEvaluations: async (teamId: number, period: string): Promise<{ message: string }> => {
-    return await apiClient.post<{ message: string }>(`/api/team/${teamId}/evaluations`, { period });
+  getAvailableEmployees: async (teamId: number): Promise<UserSummaryDto[]> => {
+    return await apiClient.get<UserSummaryDto[]>(`/api/team/${teamId}/available-employees`);
   },
 
   /**
-   * Get team hierarchy
+   * Get team performance comparison
    */
-  getTeamHierarchy: async (): Promise<any[]> => {
-    return await apiClient.get<any[]>('/api/team/hierarchy');
+  getTeamPerformanceComparison: async (teamIds: number[], period: string): Promise<TeamPerformanceMetricsDto[]> => {
+    return await apiClient.get<TeamPerformanceMetricsDto[]>('/api/team/performance-comparison', {
+      teamIds: teamIds.join(','),
+      period,
+    });
   },
-
-  /**
-   * Validate team assignment
-   */
-  validateTeamAssignment: async (teamId: number, userId: number): Promise<{ isValid: boolean, message?: string }> => {
-    return await apiClient.get<{ isValid: boolean, message?: string }>(`/api/team/${teamId}/validate-assignment/${userId}`);
-  }
 };

@@ -1,56 +1,11 @@
 export interface AnalyticsRequest {
-  startDate?: Date;
-  endDate?: Date;
+  startDate?: string;
+  endDate?: string;
   departmentIds?: number[];
+  teamIds?: number[];
   metricTypes?: string[];
-  groupBy?: string;
+  groupBy?: 'day' | 'week' | 'month' | 'quarter' | 'year' | 'department' | 'team';
   includeComparisons?: boolean;
-}
-
-export interface AnalyticsResponse {
-  totalUsers: number;
-  totalEvaluations: number;
-  completedEvaluations: number;
-  averageScore: number;
-  performanceTrend: any[];
-  departmentPerformance: any[];
-  topPerformers: any[];
-  recentActivity: any[];
-  totalTeams?: number;
-  radarData?: any[];
-  heatmapData?: any[];
-}
-
-export interface RealTimeMetrics {
-  activeUsers: number;
-  activeEvaluations: number;
-  completedToday: number;
-  averageCompletionTime: number;
-}
-
-export interface TopPerformer {
-  id: number;
-  name: string;
-  email: string;
-  department: string;
-  score: number;
-  rank: number;
-  avatar?: string;
-  improvement?: number;
-}
-
-export interface DepartmentPerformance {
-  id: number;
-  name: string;
-  averageScore: number;
-  totalEmployees: number;
-  completionRate: number;
-}
-
-export interface PerformanceTrend {
-  date: string;
-  score: number;
-  evaluations: number;
 }
 
 export interface ChartDataPoint {
@@ -90,6 +45,16 @@ export interface DepartmentComparison {
   employeeCount: number;
 }
 
+export interface TopPerformer {
+  userId: number;
+  employeeName: string;
+  departmentName: string;
+  averageScore: number;
+  totalEvaluations: number;
+  rank: number;
+  avatar?: string;
+}
+
 export interface ScoreDistribution {
   range: string;
   count: number;
@@ -102,6 +67,13 @@ export interface EvaluationProgress {
   count: number;
   percentage: number;
   color: string;
+}
+
+export interface RealTimeMetrics {
+  evaluationsCompletedToday: number;
+  evaluationsInProgress: number;
+  averageCompletionTime: number;
+  systemHealth: 'excellent' | 'good' | 'warning' | 'critical';
 }
 
 export interface AdvancedAnalytics {

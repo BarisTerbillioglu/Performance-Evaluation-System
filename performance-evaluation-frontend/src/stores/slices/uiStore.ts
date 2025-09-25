@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { immer } from 'zustand/middleware/immer';
-import { UIStore, UIState, LoadingStates, Notification, Modal } from '../types/ui';
+import { UIStore, LoadingStates, Notification, Modal } from '../types/ui';
 import { persist, createAuthPersistConfig } from '../middleware/persist';
 import { loggerWithActions } from '../middleware/logger';
 
@@ -48,264 +48,291 @@ let modalId = 0;
 
 export const useUIStore = create<UIStore>()(
   loggerWithActions(
-    immer((set, get) => ({
-        // Initial state
-        ...initialState,
+    persist(
+      immer((set, get) => ({
+          // Initial state
+          ...initialState,
 
-        // Loading state management
-        setLoading: (key: keyof LoadingStates, loading: boolean) => {
-          set((state) => {
-            state.loading[key] = loading;
-          });
-        },
+          // Loading state management
+          setLoading: (key, loading) => {
+            set((state) => {
+              state.loading[key] = loading;
+            });
+          },
 
-        setGlobalLoading: (loading: boolean) => {
-          set((state) => {
-            state.loading.global = loading;
-          });
-        },
+          setGlobalLoading: (loading) => {
+            set((state) => {
+              state.loading.global = loading;
+            });
+          },
 
-        isLoading: (key?: keyof LoadingStates) => {
-          const state = get();
-          if (key) {
-            return state.loading[key];
-          }
-          // Check if any loading state is true
-          return Object.values(state.loading).some((loading: unknown) => Boolean(loading));
-        },
+          isLoading: (key) => {
+            const state = get();
+            if (key) {
+              return state.loading[key];
+            }
+            // Check if any loading state is true
+            return Object.values(state.loading).some(loading => loading);
+          },
 
-        // Notification management
-        showNotification: (notification: Omit<Notification, 'id' | 'createdAt'>) => {
-          const id = `notification-${++notificationId}`;
-          const newNotification: Notification = {
-            ...notification,
-            id,
-            createdAt: Date.now(),
-            duration: notification.duration ?? 5000, // Default 5 seconds
-          };
+          // Notification management
+          showNotification: (notification) => {
+            const id = `notification-${++notificationId}`;
+            const newNotification: Notification = {
+              ...notification,
+              id,
+              createdAt: Date.now(),
+              duration: notification.duration ?? 5000, // Default 5 seconds
+            };
 
-          set((state) => {
-            state.notifications.push(newNotification);
-          });
+            set((state) => {
+              state.notifications.push(newNotification);
+            });
 
-          // Auto-dismiss if duration is set
-          if (newNotification.duration && newNotification.duration > 0) {
-            setTimeout(() => {
-              get().hideNotification(id);
-            }, newNotification.duration);
-          }
-
-          return id;
-        },
-
-        hideNotification: (id: string) => {
-          set((state) => {
-            state.notifications = state.notifications.filter((n: Notification) => n.id !== id);
-          });
-        },
-
-        clearNotifications: () => {
-          set((state) => {
-            state.notifications = [];
-          });
-        },
-
-        showSuccess: (title: string, message?: string) => {
-          return get().showNotification({
-            type: 'success',
-            title,
-            message: message || '',
-          });
-        },
-
-        showError: (title: string, message?: string) => {
-          return get().showNotification({
-            type: 'error',
-            title,
-            message: message || '',
-            duration: 8000, // Error messages stay longer
-          });
-        },
-
-        showWarning: (title: string, message?: string) => {
-          return get().showNotification({
-            type: 'warning',
-            title,
-            message: message || '',
-          });
-        },
-
-        showInfo: (title: string, message?: string) => {
-          return get().showNotification({
-            type: 'info',
-            title,
-            message: message || '',
-          });
-        },
-
-        // Modal management
-        showModal: (modal: Omit<Modal, 'id'>) => {
-          const id = `modal-${++modalId}`;
-          const newModal: Modal = {
-            ...modal,
-            id,
-            closable: modal.closable ?? true,
-            size: modal.size ?? 'md',
-          };
-
-          set((state) => {
-            state.modals.push(newModal);
-          });
-
-          return id;
-        },
-
-        hideModal: (id?: string) => {
-          set((state) => {
-            let modalToHide: Modal | undefined;
-
-            if (id) {
-              modalToHide = state.modals.find((m: Modal) => m.id === id);
-            } else {
-              // If no id provided, hide the most recent modal
-              modalToHide = state.modals[state.modals.length - 1];
+            // Auto-dismiss if duration is set
+            if (newNotification.duration && newNotification.duration > 0) {
+              setTimeout(() => {
+                get().hideNotification(id);
+              }, newNotification.duration);
             }
 
-            if (modalToHide?.onClose) {
-              modalToHide.onClose();
-            }
+            return id;
+          },
 
-            if (id) {
-              state.modals = state.modals.filter((m: Modal) => m.id !== id);
-            } else {
-              state.modals.pop(); // Remove the last modal
-            }
-          });
-        },
+          hideNotification: (id) => {
+            set((state) => {
+              state.notifications = state.notifications.filter(n => n.id !== id);
+            });
+          },
 
-        clearModals: () => {
-          set((state) => {
-            // Call onClose for all modals
-            state.modals.forEach((modal: Modal) => {
-              if (modal.onClose) {
+          clearNotifications: () => {
+            set((state) => {
+              state.notifications = [];
+            });
+          },
+
+          showSuccess: (title, message) => {
+            return get().showNotification({
+              type: 'success',
+              title,
+              message: message || '',
+            });
+          },
+
+          showError: (title, message) => {
+            return get().showNotification({
+              type: 'error',
+              title,
+              message: message || '',
+              duration: 8000, // Error messages stay longer
+            });
+          },
+
+          showWarning: (title, message) => {
+            return get().showNotification({
+              type: 'warning',
+              title,
+              message: message || '',
+            });
+          },
+
+          showInfo: (title, message) => {
+            return get().showNotification({
+              type: 'info',
+              title,
+              message: message || '',
+            });
+          },
+
+          // Modal management
+          showModal: (modal) => {
+            const id = `modal-${++modalId}`;
+            const newModal: Modal = {
+              ...modal,
+              id,
+              closable: modal.closable ?? true,
+              size: modal.size ?? 'md',
+            };
+
+            set((state) => {
+              state.modals.push(newModal);
+            });
+
+            return id;
+          },
+
+          hideModal: (id) => {
+            set((state) => {
+              const modal = state.modals.find(m => m.id === id);
+              if (modal?.onClose) {
                 modal.onClose();
               }
+              state.modals = state.modals.filter(m => m.id !== id);
             });
-            state.modals = [];
-          });
-        },
+          },
 
-        showConfirm: (title: string, content: string, onConfirm: () => void) => {
-          return get().showModal({
-            type: 'confirm',
-            title,
-            content,
-            onConfirm,
-            size: 'sm',
-          });
-        },
+          clearModals: () => {
+            set((state) => {
+              // Call onClose for all modals
+              state.modals.forEach(modal => {
+                if (modal.onClose) {
+                  modal.onClose();
+                }
+              });
+              state.modals = [];
+            });
+          },
 
-        // Sidebar management
-        toggleSidebar: () => {
-          set((state) => {
-            state.sidebarOpen = !state.sidebarOpen;
-          });
-        },
+          showConfirm: (title, content, onConfirm) => {
+            return get().showModal({
+              type: 'confirm',
+              title,
+              content,
+              onConfirm,
+              size: 'sm',
+            });
+          },
 
-        setSidebarOpen: (open: boolean) => {
-          set((state) => {
-            state.sidebarOpen = open;
-          });
-        },
+          // Sidebar management
+          toggleSidebar: () => {
+            set((state) => {
+              state.sidebarOpen = !state.sidebarOpen;
+            });
+          },
 
-        toggleSidebarCollapsed: () => {
-          set((state) => {
-            state.sidebarCollapsed = !state.sidebarCollapsed;
-          });
-        },
+          setSidebarOpen: (open) => {
+            set((state) => {
+              state.sidebarOpen = open;
+            });
+          },
 
-        setSidebarCollapsed: (collapsed: boolean) => {
-          set((state) => {
-            state.sidebarCollapsed = collapsed;
-          });
-        },
+          toggleSidebarCollapsed: () => {
+            set((state) => {
+              state.sidebarCollapsed = !state.sidebarCollapsed;
+            });
+          },
 
-        // Theme management
-        setTheme: (theme: 'light' | 'dark') => {
-          set((state) => {
-            state.theme = theme;
-          });
-        },
+          setSidebarCollapsed: (collapsed) => {
+            set((state) => {
+              state.sidebarCollapsed = collapsed;
+            });
+          },
 
-        toggleTheme: () => {
-          set((state) => {
-            state.theme = state.theme === 'light' ? 'dark' : 'light';
-          });
-        },
-
-        // Layout management
-        setLayout: (layout: 'default' | 'compact') => {
-          set((state) => {
-            state.layout = layout;
-          });
-        },
-
-        // Page state management
-        setPageTitle: (title: string) => {
-          set((state) => {
-            state.pageTitle = title;
-          });
-        },
-
-        setBreadcrumbs: (breadcrumbs: Array<{ label: string; href?: string }>) => {
-          set((state) => {
-            state.breadcrumbs = breadcrumbs;
-          });
-        },
-
-        // Form state management
-        setFormDirty: (formId: string, dirty: boolean) => {
-          set((state) => {
-            state.formDirty[formId] = dirty;
-          });
-        },
-
-        isFormDirty: (formId: string) => {
-          const state = get();
-          return state.formDirty[formId] || false;
-        },
-
-        clearFormDirty: (formId?: string) => {
-          set((state) => {
-            if (formId) {
-              delete state.formDirty[formId];
-            } else {
-              state.formDirty = {};
+          // Theme management
+          setTheme: (theme) => {
+            set((state) => {
+              state.theme = theme;
+            });
+            
+            // Apply theme to document
+            if (typeof document !== 'undefined') {
+              document.documentElement.classList.toggle('dark', theme === 'dark');
             }
-          });
-        },
+          },
 
-        // Network state
-        setOnlineStatus: (online: boolean) => {
-          set((state) => {
-            state.isOnline = online;
-          });
-        },
+          toggleTheme: () => {
+            const currentTheme = get().theme;
+            get().setTheme(currentTheme === 'light' ? 'dark' : 'light');
+          },
 
-        // Performance settings
-        setOptimisticUpdates: (enabled: boolean) => {
-          set((state) => {
-            state.optimisticUpdates = enabled;
-          });
-        },
+          // Layout management
+          setLayout: (layout) => {
+            set((state) => {
+              state.layout = layout;
+            });
+          },
 
-        // Bulk actions
-        resetUI: () => {
-          set((state) => {
-            Object.assign(state, initialState);
-          });
-        },
-      }))
+          // Page state management
+          setPageTitle: (title) => {
+            set((state) => {
+              state.pageTitle = title;
+            });
+            
+            // Update document title
+            if (typeof document !== 'undefined') {
+              document.title = title ? `${title} - Performance Evaluation System` : 'Performance Evaluation System';
+            }
+          },
+
+          setBreadcrumbs: (breadcrumbs) => {
+            set((state) => {
+              state.breadcrumbs = breadcrumbs;
+            });
+          },
+
+          // Form state management
+          setFormDirty: (formId, dirty) => {
+            set((state) => {
+              if (dirty) {
+                state.formDirty[formId] = true;
+              } else {
+                delete state.formDirty[formId];
+              }
+            });
+          },
+
+          isFormDirty: (formId) => {
+            return Boolean(get().formDirty[formId]);
+          },
+
+          clearFormDirty: (formId) => {
+            set((state) => {
+              if (formId) {
+                delete state.formDirty[formId];
+              } else {
+                state.formDirty = {};
+              }
+            });
+          },
+
+          // Network state
+          setOnlineStatus: (online) => {
+            set((state) => {
+              state.isOnline = online;
+            });
+            
+            if (online) {
+              get().showSuccess('Connection restored', 'You are back online');
+            } else {
+              get().showWarning('Connection lost', 'Working offline');
+            }
+          },
+
+          // Performance settings
+          setOptimisticUpdates: (enabled) => {
+            set((state) => {
+              state.optimisticUpdates = enabled;
+            });
+          },
+
+          // Bulk actions
+          resetUI: () => {
+            set((state) => {
+              Object.assign(state, {
+                ...initialState,
+                // Keep theme preference
+                theme: state.theme,
+                // Keep sidebar preferences
+                sidebarCollapsed: state.sidebarCollapsed,
+                // Keep performance settings
+                optimisticUpdates: state.optimisticUpdates,
+              });
+            });
+          },
+        })),
+        createPersistConfig('ui-store', {
+          partialize: (state) => ({
+            theme: state.theme,
+            layout: state.layout,
+            sidebarCollapsed: state.sidebarCollapsed,
+            optimisticUpdates: state.optimisticUpdates,
+            // Don't persist notifications, modals, or loading states
+          }),
+        })
+      ),
+      {
+        name: 'UIStore',
+      }
     )
   );
 

@@ -1,49 +1,78 @@
 import React from 'react';
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { Navigate, useLocation } from 'react-router-dom';
+import { useAuth } from '@/store';
 import { UserRole } from '@/types/roles';
+import { LoadingSpinner } from '@/components/common';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
   requiredRoles?: UserRole[];
-  redirectTo?: string;
+  requiredPermission?: {
+    resource: string;
+    action: string;
+  };
+  fallbackPath?: string;
+  requireAuth?: boolean;
 }
 
 export const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   children,
   requiredRoles = [],
-  redirectTo = '/login'
+  requiredPermission,
+  fallbackPath = '/login',
+  requireAuth = true,
 }) => {
-  const { state } = useAuth();
-  const { user, isAuthenticated, isLoading } = state;
+  const { state, hasRole, hasPermission, canAccessRoute } = useAuth();
+  const location = useLocation();
 
-  if (isLoading) {
+  // Show loading spinner while authentication is being checked
+  if (state.isLoading || !state.isInitialized) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex items-center space-x-2">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="text-gray-600">Loading...</span>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-gray-600">Verifying access...</p>
         </div>
       </div>
     );
   }
 
-  if (!isAuthenticated || !user) {
-    return <Navigate to={redirectTo} replace />;
+  // Redirect to login if authentication is required but user is not authenticated
+  if (requireAuth && !state.isAuthenticated) {
+    return (
+      <Navigate 
+        to={fallbackPath} 
+        state={{ from: location.pathname }} 
+        replace 
+      />
+    );
   }
 
-  // Check role-based access
-  if (requiredRoles.length > 0) {
-    const userRoles = user.roles || [];
-    const hasRequiredRole = requiredRoles.some(role => 
-      userRoles.includes(role.toString())
-    );
+  // If authenticated, check role-based access
+  if (state.isAuthenticated && state.user) {
+    // Check if user has required roles
+    if (requiredRoles.length > 0) {
+      const hasRequiredRole = requiredRoles.some(role => hasRole(role));
+      if (!hasRequiredRole) {
+        return <AccessDenied />;
+      }
+    }
 
-    if (!hasRequiredRole) {
-      return <Navigate to="/access-denied" replace />;
+    // Check if user has required permission
+    if (requiredPermission) {
+      const { resource, action } = requiredPermission;
+      if (!hasPermission(resource, action)) {
+        return <AccessDenied />;
+      }
+    }
+
+    // Check route-level access
+    if (!canAccessRoute(location.pathname)) {
+      return <AccessDenied />;
     }
   }
 
+  // If all checks pass, render the protected content
   return <>{children}</>;
 };
 

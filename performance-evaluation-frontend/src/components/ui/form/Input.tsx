@@ -25,7 +25,7 @@ const inputVariants = cva(
 );
 
 export interface InputProps
-  extends Omit<React.InputHTMLAttributes<HTMLInputElement>, 'size'>,
+  extends React.InputHTMLAttributes<HTMLInputElement>,
     VariantProps<typeof inputVariants> {
   label?: string;
   helperText?: string;
@@ -61,6 +61,9 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
     const errorId = error ? `${inputId}-error` : undefined;
     const helperTextId = helperText ? `${inputId}-helper` : undefined;
     const currentVariant = error ? 'error' : variant;
+    
+    const hasAddons = leftAddon || rightAddon;
+    const hasIcons = leftIcon || rightIcon;
 
     const inputElement = (
       <div className="relative">
@@ -95,7 +98,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(
       </div>
     );
 
-    const inputWithAddons = (leftAddon || rightAddon) ? (
+    const inputWithAddons = hasAddons ? (
       <div className="flex">
         {leftAddon && (
           <div className="inline-flex items-center px-3 rounded-l-md border border-r-0 border-gray-300 bg-gray-50 text-gray-500 text-sm">

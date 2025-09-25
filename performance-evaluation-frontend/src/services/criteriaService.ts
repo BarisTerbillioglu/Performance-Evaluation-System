@@ -1,11 +1,16 @@
 import { apiClient } from './api';
-import { 
-  CriteriaDto, 
-  CreateCriteriaRequest, 
+import {
+  CriteriaDto,
+  CriteriaWithRoleDescriptionDto,
+  CriteriaWithScoreDto,
+  CriteriaSummaryDto,
+  CreateCriteriaRequest,
   UpdateCriteriaRequest,
   AddRoleDescriptionRequest,
-  CriteriaRoleDescriptionDto,
-  UpdateRoleDescriptionRequest
+  UpdateRoleDescriptionRequest,
+  CriteriaSearchDto,
+  CriteriaSearchRequest,
+  PaginatedResponse,
 } from '@/types';
 
 export const criteriaService = {
@@ -31,17 +36,32 @@ export const criteriaService = {
   },
 
   /**
+   * Get criteria with role descriptions
+   */
+  getCriteriaWithRoleDescriptions: async (roleId?: number): Promise<CriteriaWithRoleDescriptionDto[]> => {
+    const params = roleId ? { roleId } : undefined;
+    return await apiClient.get<CriteriaWithRoleDescriptionDto[]>('/api/criteria/with-descriptions', params);
+  },
+
+  /**
+   * Get criteria with scores for evaluation
+   */
+  getCriteriaWithScores: async (evaluationId: number): Promise<CriteriaWithScoreDto[]> => {
+    return await apiClient.get<CriteriaWithScoreDto[]>(`/api/criteria/evaluation/${evaluationId}/scores`);
+  },
+
+  /**
    * Create new criteria
    */
-  createCriteria: async (criteriaData: CreateCriteriaRequest): Promise<CriteriaDto> => {
-    return await apiClient.post<CriteriaDto>('/api/criteria', criteriaData);
+  createCriteria: async (criteria: CreateCriteriaRequest): Promise<CriteriaDto> => {
+    return await apiClient.post<CriteriaDto>('/api/criteria', criteria);
   },
 
   /**
    * Update criteria
    */
-  updateCriteria: async (id: number, criteriaData: UpdateCriteriaRequest): Promise<CriteriaDto> => {
-    return await apiClient.put<CriteriaDto>(`/api/criteria/${id}`, criteriaData);
+  updateCriteria: async (id: number, criteria: UpdateCriteriaRequest): Promise<CriteriaDto> => {
+    return await apiClient.put<CriteriaDto>(`/api/criteria/${id}`, criteria);
   },
 
   /**
@@ -52,44 +72,58 @@ export const criteriaService = {
   },
 
   /**
-   * Activate criteria
+   * Add role description to criteria
    */
-  activateCriteria: async (id: number): Promise<{ message: string }> => {
-    return await apiClient.patch<{ message: string }>(`/api/criteria/${id}/activate`);
-  },
-
-  /**
-   * Deactivate criteria
-   */
-  deactivateCriteria: async (id: number): Promise<{ message: string }> => {
-    return await apiClient.patch<{ message: string }>(`/api/criteria/${id}/deactivate`);
-  },
-
-  /**
-   * Get active criteria for evaluation
-   */
-  getActiveCriteria: async (): Promise<CriteriaDto[]> => {
-    return await apiClient.get<CriteriaDto[]>('/api/criteria/active');
-  },
-
-  /**
-   * Add role description
-   */
-  addRoleDescription: async (criteriaId: number, roleDescriptionData: AddRoleDescriptionRequest): Promise<CriteriaRoleDescriptionDto> => {
-    return await apiClient.post<CriteriaRoleDescriptionDto>('/api/criteria/role-description', roleDescriptionData);
+  addRoleDescription: async (criteriaId: number, request: AddRoleDescriptionRequest): Promise<{ message: string }> => {
+    return await apiClient.post<{ message: string }>(`/api/criteria/${criteriaId}/role-description`, request);
   },
 
   /**
    * Update role description
    */
-  updateRoleDescription: async (criteriaId: number, roleId: number, roleDescriptionData: UpdateRoleDescriptionRequest): Promise<CriteriaRoleDescriptionDto> => {
-    return await apiClient.put<CriteriaRoleDescriptionDto>(`/api/criteria/role-description/${roleId}`, roleDescriptionData);
+  updateRoleDescription: async (criteriaId: number, roleId: number, request: UpdateRoleDescriptionRequest): Promise<{ message: string }> => {
+    return await apiClient.put<{ message: string }>(`/api/criteria/${criteriaId}/role-description/${roleId}`, request);
   },
 
   /**
    * Delete role description
    */
   deleteRoleDescription: async (criteriaId: number, roleId: number): Promise<{ message: string }> => {
-    return await apiClient.delete<{ message: string }>(`/api/criteria/role-description/${roleId}`);
+    return await apiClient.delete<{ message: string }>(`/api/criteria/${criteriaId}/role-description/${roleId}`);
+  },
+
+  /**
+   * Search criteria
+   */
+  searchCriteria: async (request: CriteriaSearchRequest): Promise<PaginatedResponse<CriteriaSearchDto>> => {
+    return await apiClient.post<PaginatedResponse<CriteriaSearchDto>>('/api/criteria/search', request);
+  },
+
+  /**
+   * Get criteria summary
+   */
+  getCriteriaSummary: async (): Promise<CriteriaSummaryDto[]> => {
+    return await apiClient.get<CriteriaSummaryDto[]>('/api/criteria/summary');
+  },
+
+  /**
+   * Get active criteria
+   */
+  getActiveCriteria: async (): Promise<CriteriaDto[]> => {
+    return await apiClient.get<CriteriaDto[]>('/api/criteria/active');
+  },
+
+  /**
+   * Activate criteria
+   */
+  activateCriteria: async (id: number): Promise<{ message: string }> => {
+    return await apiClient.put<{ message: string }>(`/api/criteria/${id}/activate`);
+  },
+
+  /**
+   * Deactivate criteria
+   */
+  deactivateCriteria: async (id: number): Promise<{ message: string }> => {
+    return await apiClient.put<{ message: string }>(`/api/criteria/${id}/deactivate`);
   },
 };

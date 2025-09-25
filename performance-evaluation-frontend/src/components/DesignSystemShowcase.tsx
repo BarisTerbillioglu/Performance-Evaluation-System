@@ -1,417 +1,476 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/form/Input';
-import { Badge } from '@/components/ui/badge';
-import { Alert, AlertDescription } from '@/components/ui/feedback/Alert';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/form/Select';
-import { Checkbox } from '@/components/ui/form/Checkbox';
-import { RadioGroup, RadioGroupItem } from '@/components/ui/form/RadioGroup';
-import { Switch } from '@/components/ui/form/Switch';
-import { Textarea } from '@/components/ui/form/Textarea';
-import { DatePicker } from '@/components/ui/form/DatePicker';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/navigation/Tabs';
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/navigation/Accordion';
-import { Modal, ModalContent, ModalHeader, ModalTitle, ModalTrigger } from '@/components/ui/overlay/Modal';
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/overlay/Tooltip';
-import { Progress } from '@/components/ui/feedback/Progress';
-import { Skeleton } from '@/components/ui/feedback/Skeleton';
-import { Separator } from '@/components/ui/layout/Separator';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/data/Avatar';
-import { DataTable } from '@/components/ui/data/DataTable';
 import { 
-  UserIcon, 
-  MailIcon, 
-  PhoneIcon, 
-  MapPinIcon,
-  CalendarIcon,
-  ClockIcon,
-  StarIcon,
-  HeartIcon,
-  ThumbsUpIcon,
-  EyeIcon,
-  DownloadIcon,
-  ShareIcon
-} from '@heroicons/react/24/outline';
+  Button, 
+  Card, 
+  CardContent, 
+  CardHeader, 
+  CardTitle, 
+  Input, 
+  Badge, 
+  Modal,
+  Table,
+  TableHeader,
+  TableBody,
+  TableRow,
+  TableHead,
+  TableCell
+} from './design-system';
+import {
+  LoginForm,
+  DashboardHeader,
+  DataTable,
+  DashboardCards,
+  SidebarNavigation,
+  ModalExample,
+  VakifBankDashboard
+} from './examples';
 
-const DesignSystemShowcase: React.FC = () => {
-  const [selectedTab, setSelectedTab] = useState('buttons');
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    message: '',
-    category: '',
-    notifications: false,
-    theme: 'light',
-    date: new Date(),
-  });
+export const DesignSystemShowcase: React.FC = () => {
+  const [activeTab, setActiveTab] = useState('components');
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const handleInputChange = (field: string, value: any) => {
-    setFormData(prev => ({ ...prev, [field]: value }));
-  };
-
-  const sampleData = [
-    { id: 1, name: 'John Doe', email: 'john@example.com', role: 'Admin', status: 'Active' },
-    { id: 2, name: 'Jane Smith', email: 'jane@example.com', role: 'User', status: 'Inactive' },
-    { id: 3, name: 'Bob Johnson', email: 'bob@example.com', role: 'Manager', status: 'Active' },
+  const tabs = [
+    { id: 'components', name: 'Components', icon: '🧩' },
+    { id: 'examples', name: 'Examples', icon: '📱' },
+    { id: 'vakifbank', name: 'VakıfBank Style', icon: '🏦' },
+    { id: 'colors', name: 'Colors', icon: '🎨' },
+    { id: 'typography', name: 'Typography', icon: '📝' },
   ];
 
-  const columns = [
-    { key: 'name', title: 'Name' },
-    { key: 'email', title: 'Email' },
-    { key: 'role', title: 'Role' },
-    { key: 'status', title: 'Status' },
+  const colorPalette = [
+    { name: 'Primary', colors: ['primary-50', 'primary-100', 'primary-200', 'primary-300', 'primary-400', 'primary-500', 'primary-600', 'primary-700', 'primary-800', 'primary-900'] },
+    { name: 'Success', colors: ['success-50', 'success-100', 'success-200', 'success-300', 'success-400', 'success-500', 'success-600', 'success-700', 'success-800', 'success-900'] },
+    { name: 'Warning', colors: ['warning-50', 'warning-100', 'warning-200', 'warning-300', 'warning-400', 'warning-500', 'warning-600', 'warning-700', 'warning-800', 'warning-900'] },
+    { name: 'Error', colors: ['error-50', 'error-100', 'error-200', 'error-300', 'error-400', 'error-500', 'error-600', 'error-700', 'error-800', 'error-900'] },
+    { name: 'Info', colors: ['info-50', 'info-100', 'info-200', 'info-300', 'info-400', 'info-500', 'info-600', 'info-700', 'info-800', 'info-900'] },
+    { name: 'Gray', colors: ['gray-50', 'gray-100', 'gray-200', 'gray-300', 'gray-400', 'gray-500', 'gray-600', 'gray-700', 'gray-800', 'gray-900'] },
   ];
 
-  return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Design System Showcase</h1>
-          <p className="text-gray-600">A comprehensive overview of all UI components</p>
+  const typographyExamples = [
+    { name: 'Heading 1', class: 'text-4xl font-bold', text: 'Heading 1 - 36px' },
+    { name: 'Heading 2', class: 'text-3xl font-bold', text: 'Heading 2 - 30px' },
+    { name: 'Heading 3', class: 'text-2xl font-bold', text: 'Heading 3 - 24px' },
+    { name: 'Heading 4', class: 'text-xl font-bold', text: 'Heading 4 - 20px' },
+    { name: 'Heading 5', class: 'text-lg font-bold', text: 'Heading 5 - 18px' },
+    { name: 'Heading 6', class: 'text-base font-bold', text: 'Heading 6 - 16px' },
+    { name: 'Body Large', class: 'text-lg', text: 'Body Large - 18px' },
+    { name: 'Body', class: 'text-base', text: 'Body - 16px' },
+    { name: 'Body Small', class: 'text-sm', text: 'Body Small - 14px' },
+    { name: 'Caption', class: 'text-xs', text: 'Caption - 12px' },
+  ];
+
+  const renderComponents = () => (
+    <div className="space-y-8">
+      {/* Buttons */}
+      <section>
+        <h3 className="text-2xl font-bold text-black mb-4">Button Hierarchy (VakıfBank Style)</h3>
+        <Card>
+          <CardHeader>
+            <CardTitle>Button Variants</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div>
+              <h4 className="text-lg font-semibold text-black mb-3">Primary Actions</h4>
+              <div className="flex flex-wrap gap-4">
+                <Button variant="primary">Primary Action</Button>
+                <Button variant="primary" size="lg">Large Primary</Button>
+                <Button variant="primary" loading>Loading</Button>
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-semibold text-black mb-3">Secondary Actions</h4>
+              <div className="flex flex-wrap gap-4">
+                <Button variant="secondary">Secondary Action</Button>
+                <Button variant="ghost">Ghost Action</Button>
+                <Button variant="secondary" disabled>Disabled</Button>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-lg font-semibold text-black mb-3">Strong CTAs (Internet Banking Style)</h4>
+              <div className="flex flex-wrap gap-4">
+                <Button variant="black">Internet Banking</Button>
+                <Button variant="black" size="lg">Strong CTA</Button>
+              </div>
+            </div>
+
+            <div>
+              <h4 className="text-lg font-semibold text-black mb-3">Status Actions</h4>
+              <div className="flex flex-wrap gap-4">
+                <Button variant="success">Success Action</Button>
+                <Button variant="danger">Danger Action</Button>
+                <Button variant="info">Info Action</Button>
+              </div>
+            </div>
+            
+            <div>
+              <h4 className="text-lg font-semibold text-black mb-3">Button Sizes</h4>
+              <div className="flex flex-wrap gap-4">
+                <Button variant="primary" size="sm">Small</Button>
+                <Button variant="primary" size="md">Medium</Button>
+                <Button variant="primary" size="lg">Large</Button>
+                <Button variant="primary" size="xl">Extra Large</Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Cards */}
+      <section>
+        <h3 className="text-2xl font-bold text-black mb-4">Cards (VakıfBank Style)</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Default Card</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500">Standard white background card.</p>
+            </CardContent>
+          </Card>
+
+          <Card variant="accent">
+            <CardHeader>
+              <CardTitle>Accent Card</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-gray-500">Yellow accent background for key metrics.</p>
+            </CardContent>
+          </Card>
+
+          <Card variant="highlight">
+            <CardHeader>
+              <CardTitle>Highlight Card</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-white opacity-90">Important information with yellow background.</p>
+            </CardContent>
+          </Card>
         </div>
+      </section>
 
-        <Tabs value={selectedTab} onValueChange={setSelectedTab}>
-          <TabsList className="grid w-full grid-cols-8">
-            <TabsTrigger value="buttons">Buttons</TabsTrigger>
-            <TabsTrigger value="forms">Forms</TabsTrigger>
-            <TabsTrigger value="feedback">Feedback</TabsTrigger>
-            <TabsTrigger value="navigation">Navigation</TabsTrigger>
-            <TabsTrigger value="overlay">Overlay</TabsTrigger>
-            <TabsTrigger value="data">Data</TabsTrigger>
-            <TabsTrigger value="layout">Layout</TabsTrigger>
-            <TabsTrigger value="complete">Complete</TabsTrigger>
-          </TabsList>
+      {/* Inputs */}
+      <section>
+        <h3 className="text-2xl font-bold text-black mb-4">Inputs</h3>
+        <Card>
+          <CardHeader>
+            <CardTitle>Input Variants</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <Input label="Default Input" placeholder="Enter text..." />
+              <Input label="With Error" placeholder="Error state" error="This field is required" />
+              <Input label="With Help" placeholder="Help text" help="This is helpful information" />
+              <Input label="Disabled" placeholder="Disabled" disabled />
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <Input label="Small" size="sm" placeholder="Small input" />
+              <Input label="Medium" size="md" placeholder="Medium input" />
+              <Input label="Large" size="lg" placeholder="Large input" />
+            </div>
+          </CardContent>
+        </Card>
+      </section>
 
-          <TabsContent value="buttons" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Buttons</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex flex-wrap gap-4">
-                  <Button variant="default">Default Button</Button>
-                  <Button variant="secondary">Secondary Button</Button>
-                  <Button variant="outline">Outline Button</Button>
-                  <Button variant="ghost">Ghost Button</Button>
-                  <Button variant="destructive">Destructive Button</Button>
+      {/* Badges */}
+      <section>
+        <h3 className="text-2xl font-bold text-black mb-4">Badges</h3>
+        <Card>
+          <CardHeader>
+            <CardTitle>Badge Variants</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex flex-wrap gap-4">
+              <Badge variant="default">Default</Badge>
+              <Badge variant="primary">Primary</Badge>
+              <Badge variant="success">Success</Badge>
+              <Badge variant="warning">Warning</Badge>
+              <Badge variant="error">Error</Badge>
+              <Badge variant="info">Info</Badge>
+            </div>
+            
+            <div className="flex flex-wrap gap-4 mt-4">
+              <Badge variant="primary" size="sm">Small</Badge>
+              <Badge variant="primary" size="md">Medium</Badge>
+              <Badge variant="primary" size="lg">Large</Badge>
+            </div>
+          </CardContent>
+        </Card>
+      </section>
+
+      {/* Tables */}
+      <section>
+        <h3 className="text-2xl font-bold text-black mb-4">Tables</h3>
+        <Card>
+          <CardHeader>
+            <CardTitle>Data Table</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Department</TableHead>
+                  <TableHead>Status</TableHead>
+                  <TableHead>Score</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                <TableRow>
+                  <TableCell>John Doe</TableCell>
+                  <TableCell>Engineering</TableCell>
+                  <TableCell><Badge variant="success">Active</Badge></TableCell>
+                  <TableCell>85%</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Jane Smith</TableCell>
+                  <TableCell>Marketing</TableCell>
+                  <TableCell><Badge variant="warning">Pending</Badge></TableCell>
+                  <TableCell>92%</TableCell>
+                </TableRow>
+                <TableRow>
+                  <TableCell>Mike Johnson</TableCell>
+                  <TableCell>Sales</TableCell>
+                  <TableCell><Badge variant="error">Inactive</Badge></TableCell>
+                  <TableCell>78%</TableCell>
+                </TableRow>
+              </TableBody>
+            </Table>
+          </CardContent>
+        </Card>
+      </section>
+    </div>
+  );
+
+  const renderExamples = () => (
+    <div className="space-y-8">
+      <section>
+        <h3 className="text-2xl font-bold text-black mb-4">Login Form</h3>
+        <LoginForm />
+      </section>
+
+      <section>
+        <h3 className="text-2xl font-bold text-black mb-4">Dashboard Header</h3>
+        <DashboardHeader />
+      </section>
+
+      <section>
+        <h3 className="text-2xl font-bold text-black mb-4">Data Table</h3>
+        <DataTable />
+      </section>
+
+      <section>
+        <h3 className="text-2xl font-bold text-black mb-4">Dashboard Cards</h3>
+        <DashboardCards />
+      </section>
+
+      <section>
+        <h3 className="text-2xl font-bold text-black mb-4">Sidebar Navigation</h3>
+        <SidebarNavigation />
+      </section>
+
+      <section>
+        <h3 className="text-2xl font-bold text-black mb-4">Modal Example</h3>
+        <ModalExample />
+      </section>
+    </div>
+  );
+
+  const renderVakifBankStyle = () => (
+    <div className="space-y-8">
+      <section>
+        <h3 className="text-2xl font-bold text-black mb-4">VakıfBank Dashboard</h3>
+        <p className="text-gray-500 mb-6">
+          A complete dashboard example showcasing VakıfBank's design principles:
+          clean white backgrounds, yellow accent cards for key metrics, and professional spacing.
+        </p>
+        <VakifBankDashboard />
+      </section>
+
+      <section>
+        <h3 className="text-2xl font-bold text-black mb-4">Design Principles</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Color Usage Strategy</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">White (Backgrounds)</span>
+                  <span className="text-sm text-gray-500">80%</span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-white h-2 rounded-full" style={{ width: '80%' }}></div>
                 </div>
                 
-                <div className="flex flex-wrap gap-4">
-                  <Button size="sm">Small Button</Button>
-                  <Button size="default">Default Size</Button>
-                  <Button size="lg">Large Button</Button>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Yellow (Accents)</span>
+                  <span className="text-sm text-gray-500">15%</span>
                 </div>
-
-                <div className="flex flex-wrap gap-4">
-                  <Button disabled>Disabled Button</Button>
-                  <Button>
-                    <UserIcon className="mr-2 h-4 w-4" />
-                    With Icon
-                  </Button>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-primary-500 h-2 rounded-full" style={{ width: '15%' }}></div>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="forms" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Form Components</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Name</label>
-                    <Input
-                      placeholder="Enter your name"
-                      value={formData.name}
-                      onChange={(e) => handleInputChange('name', e.target.value)}
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Email</label>
-                    <Input
-                      type="email"
-                      placeholder="Enter your email"
-                      value={formData.email}
-                      onChange={(e) => handleInputChange('email', e.target.value)}
-                    />
-                  </div>
+                
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium">Black/Gray (Text)</span>
+                  <span className="text-sm text-gray-500">5%</span>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Category</label>
-                  <Select value={formData.category} onValueChange={(value) => handleInputChange('category', value)}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select a category" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="general">General</SelectItem>
-                      <SelectItem value="support">Support</SelectItem>
-                      <SelectItem value="feedback">Feedback</SelectItem>
-                    </SelectContent>
-                  </Select>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div className="bg-black h-2 rounded-full" style={{ width: '5%' }}></div>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Message</label>
-                  <Textarea
-                    placeholder="Enter your message"
-                    value={formData.message}
-                    onChange={(e) => handleInputChange('message', e.target.value)}
-                    rows={4}
-                  />
+          <Card>
+            <CardHeader>
+              <CardTitle>Button Hierarchy</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <Button variant="primary" size="sm">Primary</Button>
+                  <span className="text-sm text-gray-500">Main actions</span>
                 </div>
-
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Date</label>
-                  <DatePicker
-                    selected={formData.date}
-                    onChange={(date) => handleInputChange('date', date)}
-                    placeholderText="Select a date"
-                  />
+                <div className="flex items-center space-x-3">
+                  <Button variant="secondary" size="sm">Secondary</Button>
+                  <span className="text-sm text-gray-500">Alternative actions</span>
                 </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="notifications"
-                      checked={formData.notifications}
-                      onCheckedChange={(checked) => handleInputChange('notifications', checked)}
-                    />
-                    <label htmlFor="notifications" className="text-sm font-medium">
-                      Enable notifications
-                    </label>
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Theme</label>
-                    <RadioGroup value={formData.theme} onValueChange={(value) => handleInputChange('theme', value)}>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="light" id="light" />
-                        <label htmlFor="light">Light</label>
-                      </div>
-                      <div className="flex items-center space-x-2">
-                        <RadioGroupItem value="dark" id="dark" />
-                        <label htmlFor="dark">Dark</label>
-                      </div>
-                    </RadioGroup>
-                  </div>
-
-                  <div className="flex items-center space-x-2">
-                    <Switch
-                      id="airplane-mode"
-                      checked={formData.notifications}
-                      onCheckedChange={(checked) => handleInputChange('notifications', checked)}
-                    />
-                    <label htmlFor="airplane-mode" className="text-sm font-medium">
-                      Airplane mode
-                    </label>
-                  </div>
+                <div className="flex items-center space-x-3">
+                  <Button variant="black" size="sm">Strong CTA</Button>
+                  <span className="text-sm text-gray-500">Internet Banking style</span>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="feedback" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Feedback Components</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <Alert>
-                    <AlertDescription>This is a default alert message.</AlertDescription>
-                  </Alert>
-                  
-                  <Alert variant="destructive">
-                    <AlertDescription>This is a destructive alert message.</AlertDescription>
-                  </Alert>
-                  
-                  <Alert variant="success">
-                    <AlertDescription>This is a success alert message.</AlertDescription>
-                  </Alert>
+                <div className="flex items-center space-x-3">
+                  <Button variant="danger" size="sm">Danger</Button>
+                  <span className="text-sm text-gray-500">Destructive actions</span>
                 </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </section>
+    </div>
+  );
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Progress</label>
-                  <Progress value={33} className="w-full" />
-                  <Progress value={66} className="w-full" />
-                  <Progress value={100} className="w-full" />
-                </div>
+  const renderColors = () => (
+    <div className="space-y-8">
+      {colorPalette.map((palette) => (
+        <section key={palette.name}>
+          <h3 className="text-xl font-bold text-black mb-4">{palette.name} Colors</h3>
+          <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
+            {palette.colors.map((color) => (
+              <div key={color} className="text-center">
+                <div 
+                  className={`w-full h-16 rounded-lg border border-gray-200 bg-${color}`}
+                  title={color}
+                />
+                <p className="text-xs text-gray-500 mt-1">{color.split('-')[1]}</p>
+              </div>
+            ))}
+          </div>
+        </section>
+      ))}
+    </div>
+  );
 
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Skeleton</label>
-                  <div className="space-y-2">
-                    <Skeleton className="h-4 w-full" />
-                    <Skeleton className="h-4 w-3/4" />
-                    <Skeleton className="h-4 w-1/2" />
-                  </div>
-                </div>
-
-                <div className="flex flex-wrap gap-2">
-                  <Badge>Default</Badge>
-                  <Badge variant="secondary">Secondary</Badge>
-                  <Badge variant="outline">Outline</Badge>
-                  <Badge variant="destructive">Destructive</Badge>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="navigation" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Navigation Components</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Accordion type="single" collapsible>
-                  <AccordionItem value="item-1">
-                    <AccordionTrigger>Is it accessible?</AccordionTrigger>
-                    <AccordionContent>
-                      Yes. It adheres to the WAI-ARIA design pattern.
-                    </AccordionContent>
-                  </AccordionItem>
-                  <AccordionItem value="item-2">
-                    <AccordionTrigger>Is it styled?</AccordionTrigger>
-                    <AccordionContent>
-                      Yes. It comes with default styles that matches the other components&apos; aesthetic.
-                    </AccordionContent>
-                  </AccordionItem>
-                </Accordion>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="overlay" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Overlay Components</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex gap-4">
-                  <Modal>
-                    <ModalTrigger asChild>
-                      <Button>Open Modal</Button>
-                    </ModalTrigger>
-                    <ModalContent>
-                      <ModalHeader>
-                        <ModalTitle>Example Modal</ModalTitle>
-                      </ModalHeader>
-                      <div className="p-4">
-                        <p>This is an example modal content.</p>
-                      </div>
-                    </ModalContent>
-                  </Modal>
-
-                  <TooltipProvider>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button variant="outline">Hover me</Button>
-                      </TooltipTrigger>
-                      <TooltipContent>
-                        <p>This is a tooltip</p>
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="data" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Data Components</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="flex items-center space-x-4">
-                  <Avatar>
-                    <AvatarImage src="https://github.com/shadcn.png" />
-                    <AvatarFallback>CN</AvatarFallback>
-                  </Avatar>
-                  <Avatar>
-                    <AvatarFallback>JD</AvatarFallback>
-                  </Avatar>
-                </div>
-
-                <DataTable data={sampleData} columns={columns} />
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="layout" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Layout Components</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
+  const renderTypography = () => (
+    <div className="space-y-8">
+      <section>
+        <h3 className="text-2xl font-bold text-black mb-4">Typography Scale</h3>
+        <Card>
+          <CardContent className="space-y-4">
+            {typographyExamples.map((example) => (
+              <div key={example.name} className="flex items-center justify-between p-4 border border-gray-200 rounded-lg">
                 <div>
-                  <p>Content above separator</p>
-                  <Separator className="my-4" />
-                  <p>Content below separator</p>
+                  <p className="text-sm font-medium text-gray-500">{example.name}</p>
+                  <p className={example.class}>{example.text}</p>
                 </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
+                <code className="text-xs bg-gray-100 px-2 py-1 rounded">{example.class}</code>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </section>
+    </div>
+  );
 
-          <TabsContent value="complete" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Complete Form Example</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <form className="space-y-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Full Name</label>
-                      <Input placeholder="John Doe" />
-                    </div>
-                    <div className="space-y-2">
-                      <label className="text-sm font-medium">Email</label>
-                      <Input type="email" placeholder="john@example.com" />
-                    </div>
-                  </div>
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <header className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            <div className="flex items-center">
+              <div className="h-8 w-8 bg-primary-500 rounded-lg flex items-center justify-center">
+                <span className="text-white font-bold text-sm">VB</span>
+              </div>
+              <div className="ml-3">
+                <h1 className="text-xl font-semibold text-black">
+                  VakıfBank Design System
+                </h1>
+              </div>
+            </div>
+            <Button variant="primary" onClick={() => setIsModalOpen(true)}>
+              Open Modal
+            </Button>
+          </div>
+        </div>
+      </header>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Department</label>
-                    <Select>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select department" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="engineering">Engineering</SelectItem>
-                        <SelectItem value="marketing">Marketing</SelectItem>
-                        <SelectItem value="sales">Sales</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
+      {/* Navigation Tabs */}
+      <nav className="bg-white border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex space-x-8">
+            {tabs.map((tab) => (
+              <button
+                key={tab.id}
+                onClick={() => setActiveTab(tab.id)}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors duration-200 ${
+                  activeTab === tab.id
+                    ? 'border-primary-500 text-primary-500'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                <span className="mr-2">{tab.icon}</span>
+                {tab.name}
+              </button>
+            ))}
+          </div>
+        </div>
+      </nav>
 
-                  <div className="space-y-2">
-                    <label className="text-sm font-medium">Bio</label>
-                    <Textarea placeholder="Tell us about yourself..." rows={4} />
-                  </div>
+      {/* Content */}
+      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {activeTab === 'components' && renderComponents()}
+        {activeTab === 'examples' && renderExamples()}
+        {activeTab === 'vakifbank' && renderVakifBankStyle()}
+        {activeTab === 'colors' && renderColors()}
+        {activeTab === 'typography' && renderTypography()}
+      </main>
 
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <Checkbox id="terms" />
-                      <label htmlFor="terms" className="text-sm">
-                        I agree to the terms and conditions
-                      </label>
-                    </div>
-                    <Button type="submit">Submit</Button>
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+      {/* Modal */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        title="VakıfBank Design System Modal"
+      >
+        <p className="text-gray-500 mb-4">
+          This is an example modal dialog showcasing the VakıfBank-inspired design system with proper button hierarchy and professional styling.
+        </p>
+        <div className="flex justify-end space-x-3">
+          <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
+            Cancel
+          </Button>
+          <Button variant="primary" onClick={() => setIsModalOpen(false)}>
+            Confirm
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 };
 
-export { DesignSystemShowcase };
+export default DesignSystemShowcase;

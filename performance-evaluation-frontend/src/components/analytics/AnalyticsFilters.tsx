@@ -7,6 +7,7 @@ interface AnalyticsFiltersProps {
   onFiltersChange: (filters: AnalyticsRequest) => void;
   onExport: () => void;
   departments?: Array<{ id: number; name: string }>;
+  teams?: Array<{ id: number; name: string }>;
   loading?: boolean;
 }
 
@@ -15,49 +16,50 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({
   onFiltersChange,
   onExport,
   departments = [],
+  teams = [],
   loading = false
 }) => {
   const handleDateChange = (field: 'startDate' | 'endDate', value: string) => {
     onFiltersChange({
       ...filters,
-      [field]: value ? new Date(value) : undefined
+      [field]: value
     });
   };
 
   const handleDepartmentChange = (departmentId: number, checked: boolean) => {
-    const currentDepartmentIds = filters.departmentIds || [];
-    const newDepartmentIds = checked 
-      ? [...currentDepartmentIds, departmentId]
-      : currentDepartmentIds.filter(id => id !== departmentId);
+    const currentDepartments = filters.departmentIds || [];
+    const newDepartments = checked
+      ? [...currentDepartments, departmentId]
+      : currentDepartments.filter(id => id !== departmentId);
     
     onFiltersChange({
       ...filters,
-      departmentIds: newDepartmentIds
+      departmentIds: newDepartments
+    });
+  };
+
+  const handleTeamChange = (teamId: number, checked: boolean) => {
+    const currentTeams = filters.teamIds || [];
+    const newTeams = checked
+      ? [...currentTeams, teamId]
+      : currentTeams.filter(id => id !== teamId);
+    
+    onFiltersChange({
+      ...filters,
+      teamIds: newTeams
     });
   };
 
   const handleGroupByChange = (groupBy: string) => {
     onFiltersChange({
       ...filters,
-      groupBy
-    });
-  };
-
-  const handleIncludeComparisonsChange = (includeComparisons: boolean) => {
-    onFiltersChange({
-      ...filters,
-      includeComparisons
+      groupBy: groupBy as any
     });
   };
 
   const clearFilters = () => {
     onFiltersChange({
-      startDate: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000),
-      endDate: new Date(),
-      departmentIds: [],
-      metricTypes: [],
-      groupBy: 'month',
-      includeComparisons: false
+      groupBy: 'month'
     });
   };
 
@@ -98,13 +100,13 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({
           <div className="space-y-2">
             <input
               type="date"
-              value={filters.startDate instanceof Date ? filters.startDate.toISOString().split('T')[0] : ''}
+              value={filters.startDate || ''}
               onChange={(e) => handleDateChange('startDate', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
             <input
               type="date"
-              value={filters.endDate instanceof Date ? filters.endDate.toISOString().split('T')[0] : ''}
+              value={filters.endDate || ''}
               onChange={(e) => handleDateChange('endDate', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
             />
@@ -121,11 +123,13 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({
             onChange={(e) => handleGroupByChange(e.target.value)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
           >
-            <option value="day">Daily</option>
-            <option value="week">Weekly</option>
-            <option value="month">Monthly</option>
-            <option value="quarter">Quarterly</option>
-            <option value="year">Yearly</option>
+            <option value="day">Day</option>
+            <option value="week">Week</option>
+            <option value="month">Month</option>
+            <option value="quarter">Quarter</option>
+            <option value="year">Year</option>
+            <option value="department">Department</option>
+            <option value="team">Team</option>
           </select>
         </div>
 
@@ -152,27 +156,32 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({
           </div>
         </div>
 
-        {/* Include Comparisons */}
+        {/* Teams */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
-            Options
+            Teams
           </label>
-          <div className="space-y-2">
-            <label className="flex items-center space-x-2 text-sm">
-              <input
-                type="checkbox"
-                checked={filters.includeComparisons || false}
-                onChange={(e) => handleIncludeComparisonsChange(e.target.checked)}
-                className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-              />
-              <span className="text-gray-700">Include Comparisons</span>
-            </label>
+          <div className="max-h-32 overflow-y-auto space-y-1">
+            {teams.map((team) => (
+              <label key={team.id} className="flex items-center space-x-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={filters.teamIds?.includes(team.id) || false}
+                  onChange={(e) => handleTeamChange(team.id, e.target.checked)}
+                  className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                />
+                <span className="text-gray-700">{team.name}</span>
+              </label>
+            ))}
+            {teams.length === 0 && (
+              <p className="text-sm text-gray-500">No teams available</p>
+            )}
           </div>
         </div>
       </div>
 
       {/* Active Filters Summary */}
-      {(filters.startDate || filters.endDate || (filters.departmentIds && filters.departmentIds.length > 0)) && (
+      {(filters.startDate || filters.endDate || filters.departmentIds?.length || filters.teamIds?.length) && (
         <div className="mt-4 pt-4 border-t border-gray-200">
           <p className="text-sm text-gray-600 mb-2">Active Filters:</p>
           <div className="flex flex-wrap gap-2">
@@ -186,19 +195,22 @@ export const AnalyticsFilters: React.FC<AnalyticsFiltersProps> = ({
                 To: {new Date(filters.endDate).toLocaleDateString()}
               </span>
             )}
-            {filters.departmentIds?.map(deptId => {
-              const dept = departments.find(d => d.id === deptId);
+            {filters.departmentIds?.map((id) => {
+              const dept = departments.find(d => d.id === id);
               return dept ? (
-                <span key={deptId} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
+                <span key={id} className="px-2 py-1 bg-green-100 text-green-800 text-xs rounded-full">
                   {dept.name}
                 </span>
               ) : null;
             })}
-            {filters.groupBy && (
-              <span className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
-                Group by: {filters.groupBy}
-              </span>
-            )}
+            {filters.teamIds?.map((id) => {
+              const team = teams.find(t => t.id === id);
+              return team ? (
+                <span key={id} className="px-2 py-1 bg-purple-100 text-purple-800 text-xs rounded-full">
+                  {team.name}
+                </span>
+              ) : null;
+            })}
           </div>
         </div>
       )}

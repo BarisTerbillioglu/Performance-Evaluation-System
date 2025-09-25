@@ -1,30 +1,44 @@
 import { apiClient } from './api';
-import { 
-  AnalyticsRequest, 
-  AnalyticsResponse, 
-  RealTimeMetrics 
-} from '@/types/analytics';
+import { AnalyticsRequest, AdvancedAnalytics } from '@/types/analytics';
 
-class AnalyticsService {
-  async getAnalytics(filters: AnalyticsRequest): Promise<AnalyticsResponse> {
-    const response = await apiClient.post('/analytics', filters);
-    return response.data;
+export const analyticsService = {
+  // Get comprehensive analytics data
+  getAdvancedAnalytics: async (request: AnalyticsRequest): Promise<AdvancedAnalytics> => {
+    return apiClient.post<AdvancedAnalytics>('/api/analytics/advanced', request);
+  },
+
+  // Get performance trends
+  getPerformanceTrends: async (request: AnalyticsRequest) => {
+    return apiClient.post('/api/analytics/trends', request);
+  },
+
+  // Get department comparisons
+  getDepartmentComparisons: async (request: AnalyticsRequest) => {
+    return apiClient.post('/api/analytics/departments', request);
+  },
+
+  // Get top performers
+  getTopPerformers: async (request: AnalyticsRequest) => {
+    return apiClient.post('/api/analytics/top-performers', request);
+  },
+
+  // Get score distribution
+  getScoreDistribution: async (request: AnalyticsRequest) => {
+    return apiClient.post('/api/analytics/score-distribution', request);
+  },
+
+  // Get evaluation progress
+  getEvaluationProgress: async (request: AnalyticsRequest) => {
+    return apiClient.post('/api/analytics/evaluation-progress', request);
+  },
+
+  // Get real-time metrics
+  getRealTimeMetrics: async () => {
+    return apiClient.get('/api/analytics/real-time');
+  },
+
+  // Export analytics data
+  exportAnalytics: async (request: AnalyticsRequest & { format: string }) => {
+    return apiClient.post('/api/analytics/export', request);
   }
-
-  async getRealTimeMetrics(): Promise<RealTimeMetrics> {
-    const response = await apiClient.get('/analytics/realtime');
-    return response.data;
-  }
-
-  async exportAnalytics(filters: AnalyticsRequest, format: 'pdf' | 'excel' | 'csv'): Promise<Blob> {
-    const response = await apiClient.post('/analytics/export', {
-      ...filters,
-      format
-    }, {
-      responseType: 'blob'
-    });
-    return response.data;
-  }
-}
-
-export const analyticsService = new AnalyticsService();
+};

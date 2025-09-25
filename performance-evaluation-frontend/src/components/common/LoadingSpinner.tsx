@@ -1,40 +1,24 @@
 import React from 'react';
-import { cn } from '../../utils/cn';
 
-export interface LoadingSpinnerProps {
-  size?: 'sm' | 'md' | 'lg' | 'xl';
-  variant?: 'primary' | 'secondary' | 'white';
+interface LoadingSpinnerProps {
+  size?: 'sm' | 'md' | 'lg';
   className?: string;
-  text?: string;
 }
 
-const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
+export const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
   size = 'md',
-  variant = 'primary',
-  className,
-  text,
+  className = '',
 }) => {
   const sizeClasses = {
-    sm: 'w-4 h-4',
-    md: 'w-6 h-6',
-    lg: 'w-8 h-8',
-    xl: 'w-12 h-12',
-  };
-
-  const variantClasses = {
-    primary: 'text-primary-500',
-    secondary: 'text-gray-500',
-    white: 'text-white',
+    sm: 'h-4 w-4',
+    md: 'h-8 w-8',
+    lg: 'h-12 w-12',
   };
 
   return (
-    <div className={cn('flex flex-col items-center justify-center', className)}>
+    <div className={`flex justify-center items-center ${className}`}>
       <svg
-        className={cn(
-          'animate-spin',
-          sizeClasses[size],
-          variantClasses[variant]
-        )}
+        className={`animate-spin ${sizeClasses[size]} text-primary-600`}
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"
@@ -53,16 +37,6 @@ const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({
           d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
         />
       </svg>
-      {text && (
-        <p className={cn(
-          'mt-2 text-sm font-medium',
-          variant === 'white' ? 'text-white' : 'text-gray-600'
-        )}>
-          {text}
-        </p>
-      )}
     </div>
   );
 };
-
-export default LoadingSpinner;

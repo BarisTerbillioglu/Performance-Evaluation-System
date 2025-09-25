@@ -4,94 +4,77 @@
  */
 
 import {
+  authService,
   userService,
-  departmentService,
-  teamService,
   evaluationService,
   criteriaService,
   criteriaCategoryService,
+  departmentService,
+  roleService,
+  teamService,
   dashboardService,
-  fileService,
 } from '@/services';
 
 import {
+  LoginRequest,
   CreateUserRequest,
-  UpdateUserRequest,
-  CreateDepartmentRequest,
-  UpdateDepartmentRequest,
-  CreateTeamRequest,
-  UpdateTeamRequest,
   CreateEvaluationRequest,
-  UpdateEvaluationRequest,
+  CreateDepartmentRequest,
+  CreateTeamRequest,
   UpdateScoreRequest,
-  AddCommentRequest,
-  CreateCriteriaRequest,
-  UpdateCriteriaRequest,
-  AddRoleDescriptionRequest,
-  CreateCriteriaCategoryRequest,
-  UpdateCriteriaCategoryRequest,
-  WeightValidationDto,
-  RebalanceWeightRequest,
-  CategoryWeightDto,
-  UserDto,
-  DepartmentDto,
-  TeamDto,
-  EvaluationDto,
-  CriteriaDto,
-  CriteriaCategoryDto,
-  DashboardOverviewDto,
-  AdminStatisticsDto,
-  TeamPerformanceDto,
-  PersonalPerformanceDto,
-  FileUploadDto,
-  FileInfoDto,
-  PagedResult,
+  UserSearchRequest,
 } from '@/types';
 
-export const apiUsageExamples = {
-  // User management examples
-  createUser: async () => {
-    // Create a new user
-    const newUser: CreateUserRequest = {
-      firstName: 'John',
-      lastName: 'Doe',
-      email: 'john.doe@example.com',
-      password: 'hashedPassword123',
-      departmentId: 1,
-      roleIds: [1, 2], // Employee and Evaluator roles
+/**
+ * Authentication Examples
+ */
+export const authExamples = {
+  // Login user
+  login: async () => {
+    const credentials: LoginRequest = {
+      email: 'user@example.com',
+      password: 'password123'
     };
-
+    
     try {
-      const createdUser = await userService.createUser(newUser);
-      console.log('User created:', createdUser);
-      return createdUser;
+      const response = await authService.login(credentials);
+      console.log('Login successful:', response.user);
+      return response;
     } catch (error) {
-      console.error('Failed to create user:', error);
+      console.error('Login failed:', error);
       throw error;
     }
   },
 
-  updateUser: async (userId: number) => {
-    const updateData: UpdateUserRequest = {
-      firstName: 'Jane',
-      lastName: 'Smith',
-      email: 'jane.smith@example.com',
-      departmentId: 2,
-      roleIds: [1, 3], // Employee and Manager roles
-      isActive: true,
-    };
-
+  // Get current user
+  getCurrentUser: async () => {
     try {
-      const updatedUser = await userService.updateUser(userId, updateData);
-      console.log('User updated:', updatedUser);
-      return updatedUser;
+      const user = await authService.getCurrentUser();
+      console.log('Current user:', user);
+      return user;
     } catch (error) {
-      console.error('Failed to update user:', error);
+      console.error('Failed to get current user:', error);
       throw error;
     }
   },
 
-  getUsers: async () => {
+  // Logout
+  logout: async () => {
+    try {
+      await authService.logout();
+      console.log('Logout successful');
+    } catch (error) {
+      console.error('Logout failed:', error);
+    }
+  }
+};
+
+/**
+ * User Management Examples
+ */
+export const userExamples = {
+  // Get all users
+  getAllUsers: async () => {
     try {
       const users = await userService.getUsers();
       console.log('Users:', users);
@@ -102,98 +85,53 @@ export const apiUsageExamples = {
     }
   },
 
-  // Department management examples
-  createDepartment: async () => {
-    const departmentData: CreateDepartmentRequest = {
-      name: 'Engineering',
-      description: 'Software Engineering Department',
+  // Create new user
+  createUser: async () => {
+    const newUser: CreateUserRequest = {
+      firstName: 'John',
+      lastName: 'Doe',
+      email: 'john.doe@example.com',
+      passwordHash: 'hashedPassword123',
+      departmentId: 1
     };
 
     try {
-      const department = await departmentService.createDepartment(departmentData);
-      console.log('Department created:', department);
-      return department;
+      const user = await userService.createUser(newUser);
+      console.log('User created:', user);
+      return user;
     } catch (error) {
-      console.error('Failed to create department:', error);
+      console.error('Failed to create user:', error);
       throw error;
     }
   },
 
-  getDepartments: async () => {
-    try {
-      const departments = await departmentService.getDepartments();
-      console.log('Departments:', departments);
-      return departments;
-    } catch (error) {
-      console.error('Failed to get departments:', error);
-      throw error;
-    }
-  },
-
-  // Team management examples
-  createTeam: async () => {
-    const teamData: CreateTeamRequest = {
-      name: 'Frontend Team',
-      description: 'Frontend Development Team',
-      evaluatorId: 2,
+  // Search users
+  searchUsers: async () => {
+    const searchRequest: UserSearchRequest = {
+      searchTerm: 'john',
+      departmentId: 1,
+      isActive: true,
+      page: 1,
+      pageSize: 10
     };
 
     try {
-      const team = await teamService.createTeam(teamData);
-      console.log('Team created:', team);
-      return team;
+      const results = await userService.searchUsers(searchRequest);
+      console.log('Search results:', results);
+      return results;
     } catch (error) {
-      console.error('Failed to create team:', error);
+      console.error('Search failed:', error);
       throw error;
     }
-  },
+  }
+};
 
-  getTeams: async () => {
-    try {
-      const teams = await teamService.getTeams();
-      console.log('Teams:', teams);
-      return teams;
-    } catch (error) {
-      console.error('Failed to get teams:', error);
-      throw error;
-    }
-  },
-
-  // Evaluation management examples
-  createEvaluation: async () => {
-    const evaluationData: CreateEvaluationRequest = {
-      employeeId: 1,
-      period: 'Q1 2024',
-    };
-
-    try {
-      const evaluation = await evaluationService.createEvaluation(evaluationData);
-      console.log('Evaluation created:', evaluation);
-      return evaluation;
-    } catch (error) {
-      console.error('Failed to create evaluation:', error);
-      throw error;
-    }
-  },
-
-  updateScore: async (evaluationId: number) => {
-    const scoreUpdate: UpdateScoreRequest = {
-      evaluationId: evaluationId,
-      criteriaId: 1,
-      score: 85,
-    };
-
-    try {
-      const updatedScore = await evaluationService.updateScore(evaluationId, scoreUpdate);
-      console.log('Score updated:', updatedScore);
-      return updatedScore;
-    } catch (error) {
-      console.error('Failed to update score:', error);
-      throw error;
-    }
-  },
-
-  getEvaluations: async () => {
+/**
+ * Evaluation Management Examples
+ */
+export const evaluationExamples = {
+  // Get all evaluations
+  getAllEvaluations: async () => {
     try {
       const evaluations = await evaluationService.getEvaluations();
       console.log('Evaluations:', evaluations);
@@ -204,65 +142,156 @@ export const apiUsageExamples = {
     }
   },
 
-  // Criteria management examples
-  createCriteria: async () => {
-    const criteriaData: CreateCriteriaRequest = {
-      categoryId: 1,
-      name: 'Code Quality',
-      baseDescription: 'Ability to write clean, maintainable code',
+  // Create new evaluation
+  createEvaluation: async () => {
+    const newEvaluation: CreateEvaluationRequest = {
+      employeeId: 1,
+      evaluatorId: 2,
+      period: '2024 Q1',
+      startDate: '2024-01-01',
+      endDate: '2024-03-31'
     };
 
     try {
-      const criteria = await criteriaService.createCriteria(criteriaData);
-      console.log('Criteria created:', criteria);
-      return criteria;
+      const evaluation = await evaluationService.createEvaluation(newEvaluation);
+      console.log('Evaluation created:', evaluation);
+      return evaluation;
     } catch (error) {
-      console.error('Failed to create criteria:', error);
+      console.error('Failed to create evaluation:', error);
       throw error;
     }
   },
 
-  getCriteria: async () => {
+  // Get evaluation form
+  getEvaluationForm: async (evaluationId: number) => {
     try {
-      const criteria = await criteriaService.getCriteria();
-      console.log('Criteria:', criteria);
-      return criteria;
+      const form = await evaluationService.getEvaluationForm(evaluationId);
+      console.log('Evaluation form:', form);
+      return form;
     } catch (error) {
-      console.error('Failed to get criteria:', error);
+      console.error('Failed to get evaluation form:', error);
       throw error;
     }
   },
 
-  // Category management examples
-  createCategory: async () => {
-    const categoryData: CreateCriteriaCategoryRequest = {
-      name: 'Technical Skills',
-      description: 'Technical competencies and skills',
-      weight: 30,
+  // Update evaluation score
+  updateScore: async (evaluationId: number) => {
+    const scoreUpdate: UpdateScoreRequest = {
+      criteriaId: 1,
+      score: 4
     };
 
     try {
-      const category = await criteriaCategoryService.createCategory(categoryData);
-      console.log('Category created:', category);
-      return category;
+      const updatedScore = await evaluationService.updateScore(evaluationId, scoreUpdate);
+      console.log('Score updated:', updatedScore);
+      return updatedScore;
     } catch (error) {
-      console.error('Failed to create category:', error);
+      console.error('Failed to update score:', error);
       throw error;
     }
-  },
+  }
+};
 
-  getCategories: async () => {
+/**
+ * Department Management Examples
+ */
+export const departmentExamples = {
+  // Get all departments
+  getAllDepartments: async () => {
     try {
-      const categories = await criteriaCategoryService.getCategories();
-      console.log('Categories:', categories);
-      return categories;
+      const departments = await departmentService.getDepartments();
+      console.log('Departments:', departments);
+      return departments;
     } catch (error) {
-      console.error('Failed to get categories:', error);
+      console.error('Failed to get departments:', error);
       throw error;
     }
   },
 
-  // Dashboard examples
+  // Create new department
+  createDepartment: async () => {
+    const newDepartment: CreateDepartmentRequest = {
+      name: 'Engineering',
+      description: 'Software Development Department'
+    };
+
+    try {
+      const department = await departmentService.createDepartment(newDepartment);
+      console.log('Department created:', department);
+      return department;
+    } catch (error) {
+      console.error('Failed to create department:', error);
+      throw error;
+    }
+  },
+
+  // Get department with users
+  getDepartmentWithUsers: async (departmentId: number) => {
+    try {
+      const department = await departmentService.getDepartmentWithUsers(departmentId);
+      console.log('Department with users:', department);
+      return department;
+    } catch (error) {
+      console.error('Failed to get department with users:', error);
+      throw error;
+    }
+  }
+};
+
+/**
+ * Team Management Examples
+ */
+export const teamExamples = {
+  // Get all teams
+  getAllTeams: async () => {
+    try {
+      const teams = await teamService.getTeams();
+      console.log('Teams:', teams);
+      return teams;
+    } catch (error) {
+      console.error('Failed to get teams:', error);
+      throw error;
+    }
+  },
+
+  // Create new team
+  createTeam: async () => {
+    const newTeam: CreateTeamRequest = {
+      name: 'Frontend Team',
+      description: 'Frontend Development Team'
+    };
+
+    try {
+      const team = await teamService.createTeam(newTeam);
+      console.log('Team created:', team);
+      return team;
+    } catch (error) {
+      console.error('Failed to create team:', error);
+      throw error;
+    }
+  },
+
+  // Assign employee to team
+  assignEmployee: async (teamId: number) => {
+    try {
+      const result = await teamService.assignEmployee(teamId, {
+        userId: 1,
+        role: 'Developer'
+      });
+      console.log('Employee assigned:', result);
+      return result;
+    } catch (error) {
+      console.error('Failed to assign employee:', error);
+      throw error;
+    }
+  }
+};
+
+/**
+ * Dashboard Examples
+ */
+export const dashboardExamples = {
+  // Get dashboard overview
   getDashboardOverview: async () => {
     try {
       const overview = await dashboardService.getDashboardOverview();
@@ -274,39 +303,17 @@ export const apiUsageExamples = {
     }
   },
 
-  getAdminStats: async () => {
+  // Get admin dashboard
+  getAdminDashboard: async () => {
     try {
-      const stats = await dashboardService.getAdminStatistics();
-      console.log('Admin statistics:', stats);
-      return stats;
+      const adminData = await dashboardService.getAdminDashboard();
+      console.log('Admin dashboard:', adminData);
+      return adminData;
     } catch (error) {
-      console.error('Failed to get admin statistics:', error);
+      console.error('Failed to get admin dashboard:', error);
       throw error;
     }
-  },
-
-  // File management examples
-  uploadFile: async (file: File) => {
-    try {
-      const uploadResult = await fileService.uploadFile(file);
-      console.log('File uploaded:', uploadResult);
-      return uploadResult;
-    } catch (error) {
-      console.error('Failed to upload file:', error);
-      throw error;
-    }
-  },
-
-  getFileInfo: async (filePath: string) => {
-    try {
-      const fileInfo = await fileService.getFileInfo(filePath);
-      console.log('File info:', fileInfo);
-      return fileInfo;
-    } catch (error) {
-      console.error('Failed to get file info:', error);
-      throw error;
-    }
-  },
+  }
 };
 
 /**

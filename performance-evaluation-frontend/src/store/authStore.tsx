@@ -17,7 +17,6 @@ const initialState: AuthState = {
   isLoading: true,
   isInitialized: false,
   error: null,
-  loading: true,
 };
 
 // Action types
@@ -34,7 +33,7 @@ type AuthAction =
 const authReducer = (state: AuthState, action: AuthAction): AuthState => {
   switch (action.type) {
     case 'SET_LOADING':
-      return { ...state, isLoading: action.payload, loading: action.payload };
+      return { ...state, isLoading: action.payload };
     case 'SET_INITIALIZED':
       return { ...state, isInitialized: action.payload };
     case 'LOGIN_SUCCESS':
@@ -48,7 +47,6 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         user: userWithRole,
         isAuthenticated: true,
         isLoading: false,
-        loading: false,
         isInitialized: true,
         error: null,
       };
@@ -56,7 +54,6 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
       return {
         ...initialState,
         isLoading: false,
-        loading: false,
         isInitialized: true,
       };
     case 'SET_USER':
@@ -71,7 +68,7 @@ const authReducer = (state: AuthState, action: AuthAction): AuthState => {
         error: null,
       };
     case 'SET_ERROR':
-      return { ...state, error: action.payload, isLoading: false, loading: false };
+      return { ...state, error: action.payload, isLoading: false };
     case 'CLEAR_ERROR':
       return { ...state, error: null };
     default:
@@ -167,21 +164,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, []);
 
-  // Update user function
-  const updateUser = useCallback((userData: Partial<UserInfo>) => {
-    if (state.user) {
-      const updatedUser = { ...state.user, ...userData };
-      dispatch({ type: 'SET_USER', payload: updatedUser });
-    }
-  }, [state.user]);
-
-  // Initialize auth function
-  const initializeAuth = useCallback(async () => {
-    if (!state.isInitialized) {
-      await checkAuth();
-    }
-  }, [state.isInitialized, checkAuth]);
-
   // RBAC helper functions
   const hasRoleCheck = useCallback((role: UserRole): boolean => {
     return hasRole(state.user, role);
@@ -234,8 +216,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     logout,
     checkAuth,
     refreshAuth,
-    updateUser,
-    initializeAuth,
     hasRole: hasRoleCheck,
     hasPermission: hasPermissionCheck,
     canAccessRoute: canAccessRouteCheck,

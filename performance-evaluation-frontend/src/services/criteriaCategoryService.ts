@@ -1,15 +1,17 @@
 import { apiClient } from './api';
-import { 
-  CriteriaCategoryDto, 
-  CreateCriteriaCategoryRequest, 
-  UpdateCriteriaCategoryRequest,
+import {
+  CriteriaCategoryDto,
+  CriteriaCategoryWithCriteriaDto,
+  CategoryWeightDto,
   WeightValidationDto,
-  RebalanceWeightRequest
+  CreateCriteriaCategoryRequest,
+  UpdateCriteriaCategoryRequest,
+  RebalanceWeightRequest,
 } from '@/types';
 
 export const criteriaCategoryService = {
   /**
-   * Get all categories
+   * Get all criteria categories
    */
   getCategories: async (): Promise<CriteriaCategoryDto[]> => {
     return await apiClient.get<CriteriaCategoryDto[]>('/api/criteriacategory');
@@ -23,17 +25,31 @@ export const criteriaCategoryService = {
   },
 
   /**
+   * Get category with criteria
+   */
+  getCategoryWithCriteria: async (id: number): Promise<CriteriaCategoryWithCriteriaDto> => {
+    return await apiClient.get<CriteriaCategoryWithCriteriaDto>(`/api/criteriacategory/${id}/with-criteria`);
+  },
+
+  /**
+   * Get all categories with criteria
+   */
+  getCategoriesWithCriteria: async (): Promise<CriteriaCategoryWithCriteriaDto[]> => {
+    return await apiClient.get<CriteriaCategoryWithCriteriaDto[]>('/api/criteriacategory/with-criteria');
+  },
+
+  /**
    * Create new category
    */
-  createCategory: async (categoryData: CreateCriteriaCategoryRequest): Promise<CriteriaCategoryDto> => {
-    return await apiClient.post<CriteriaCategoryDto>('/api/criteriacategory', categoryData);
+  createCategory: async (category: CreateCriteriaCategoryRequest): Promise<CriteriaCategoryDto> => {
+    return await apiClient.post<CriteriaCategoryDto>('/api/criteriacategory', category);
   },
 
   /**
    * Update category
    */
-  updateCategory: async (id: number, categoryData: UpdateCriteriaCategoryRequest): Promise<CriteriaCategoryDto> => {
-    return await apiClient.put<CriteriaCategoryDto>(`/api/criteriacategory/${id}`, categoryData);
+  updateCategory: async (id: number, category: UpdateCriteriaCategoryRequest): Promise<CriteriaCategoryDto> => {
+    return await apiClient.put<CriteriaCategoryDto>(`/api/criteriacategory/${id}`, category);
   },
 
   /**
@@ -44,17 +60,24 @@ export const criteriaCategoryService = {
   },
 
   /**
-   * Activate category
+   * Get category weights
    */
-  activateCategory: async (id: number): Promise<{ message: string }> => {
-    return await apiClient.patch<{ message: string }>(`/api/criteriacategory/${id}/activate`);
+  getCategoryWeights: async (): Promise<CategoryWeightDto[]> => {
+    return await apiClient.get<CategoryWeightDto[]>('/api/criteriacategory/weights');
   },
 
   /**
-   * Deactivate category
+   * Validate weights
    */
-  deactivateCategory: async (id: number): Promise<{ message: string }> => {
-    return await apiClient.patch<{ message: string }>(`/api/criteriacategory/${id}/deactivate`);
+  validateWeights: async (weights: CategoryWeightDto[]): Promise<WeightValidationDto> => {
+    return await apiClient.post<WeightValidationDto>('/api/criteriacategory/validate-weights', weights);
+  },
+
+  /**
+   * Rebalance weights
+   */
+  rebalanceWeights: async (request: RebalanceWeightRequest): Promise<{ message: string; weights: CategoryWeightDto[] }> => {
+    return await apiClient.put<{ message: string; weights: CategoryWeightDto[] }>('/api/criteriacategory/rebalance-weights', request);
   },
 
   /**
@@ -65,16 +88,16 @@ export const criteriaCategoryService = {
   },
 
   /**
-   * Validate weights
+   * Activate category
    */
-  validateWeights: async (weights?: any): Promise<WeightValidationDto> => {
-    return await apiClient.get<WeightValidationDto>('/api/criteriacategory/validate-weights');
+  activateCategory: async (id: number): Promise<{ message: string }> => {
+    return await apiClient.put<{ message: string }>(`/api/criteriacategory/${id}/activate`);
   },
 
   /**
-   * Rebalance weights
+   * Deactivate category
    */
-  rebalanceWeights: async (weights: { categoryWeights: RebalanceWeightRequest[] }): Promise<{ message: string }> => {
-    return await apiClient.post<{ message: string }>('/api/criteriacategory/rebalance-weights', weights.categoryWeights);
+  deactivateCategory: async (id: number): Promise<{ message: string }> => {
+    return await apiClient.put<{ message: string }>(`/api/criteriacategory/${id}/deactivate`);
   },
 };

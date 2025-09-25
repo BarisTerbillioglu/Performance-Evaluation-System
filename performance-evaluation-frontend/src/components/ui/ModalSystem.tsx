@@ -31,8 +31,8 @@ const ModalContent: React.FC<{ modal: Modal }> = ({ modal }) => {
     }
   };
   
-  const handleOverlayClick = () => {
-    if (modal.closable !== false) {
+  const handleOverlayClick = (e: React.MouseEvent) => {
+    if (e.target === e.currentTarget && modal.closable !== false) {
       hideModal(modal.id);
     }
   };

@@ -1,35 +1,45 @@
 import React from 'react';
 import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/hooks/useAuth';
+import { useAuth } from '@/store';
+import { LoadingSpinner } from '@/components/common';
 
 interface AuthGuardProps {
   children: React.ReactNode;
   requireAuth?: boolean;
+  redirectTo?: string;
 }
 
-export const AuthGuard: React.FC<AuthGuardProps> = ({ children, requireAuth = true }) => {
+/**
+ * AuthGuard component that handles authentication checks
+ * and loading states during app initialization
+ */
+export const AuthGuard: React.FC<AuthGuardProps> = ({
+  children,
+  requireAuth = true,
+  redirectTo = '/login',
+}) => {
   const { state } = useAuth();
-  const { user, isAuthenticated, isLoading } = state;
 
-  if (isLoading) {
+  // Show loading spinner while authentication is being initialized
+  if (state.isLoading || !state.isInitialized) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="flex items-center space-x-2">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-          <span className="text-gray-600">Loading...</span>
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <LoadingSpinner size="lg" />
+          <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
     );
   }
 
-  if (requireAuth) {
-    if (!isAuthenticated || !user) {
-      return <Navigate to="/login" replace />;
-    }
-  } else {
-    if (isAuthenticated && user) {
-      return <Navigate to="/dashboard" replace />;
-    }
+  // Redirect if authentication is required but user is not authenticated
+  if (requireAuth && !state.isAuthenticated) {
+    return <Navigate to={redirectTo} replace />;
+  }
+
+  // Redirect authenticated users away from auth pages
+  if (!requireAuth && state.isAuthenticated) {
+    return <Navigate to="/dashboard" replace />;
   }
 
   return <>{children}</>;

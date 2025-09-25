@@ -115,7 +115,7 @@ export interface UIActions {
   
   // Modal management
   showModal: (modal: Omit<Modal, 'id'>) => string;
-  hideModal: (id?: string) => void;
+  hideModal: (id: string) => void;
   clearModals: () => void;
   showConfirm: (title: string, content: string, onConfirm: () => void) => string;
   

@@ -1,3 +1,4 @@
-export { AuthGuard } from './AuthGuard';
-export { PermissionGuard } from './PermissionGuard';
-export { ProtectedRoute } from './ProtectedRoute';
+// Export all auth components
+export * from './ProtectedRoute';
+export * from './AuthGuard';
+export * from './PermissionGuard';
