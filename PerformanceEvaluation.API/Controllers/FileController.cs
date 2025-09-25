@@ -36,7 +36,7 @@ namespace PerformanceEvaluation.API.Controllers
         /// <returns>File path of uploaded image</returns>
         [HttpPost("profile-picture")]
         [RequestSizeLimit(5 * 1024 * 1024)] // 5MB limit
-        public async Task<IActionResult> UploadProfilePicture([FromForm] IFormFile file)
+        public async Task<IActionResult> UploadProfilePicture( IFormFile file)
         {
             try
             {
@@ -73,7 +73,7 @@ namespace PerformanceEvaluation.API.Controllers
         /// <returns>File path of uploaded document</returns>
         [HttpPost("document")]
         [RequestSizeLimit(10 * 1024 * 1024)] // 10MB limit
-        public async Task<IActionResult> UploadDocument([FromForm] IFormFile file, [FromForm] string documentType)
+        public async Task<IActionResult> UploadDocument( IFormFile file,  string documentType)
         {
             try
             {
@@ -117,7 +117,7 @@ namespace PerformanceEvaluation.API.Controllers
         [HttpPost("bulk-import")]
         [Authorize(Policy = "ManagerOrAdmin")]
         [RequestSizeLimit(50 * 1024 * 1024)] // 50MB limit
-        public async Task<IActionResult> UploadBulkImportFile([FromForm] IFormFile file, [FromForm] string importType)
+        public async Task<IActionResult> UploadBulkImportFile( IFormFile file,  string importType)
         {
             try
             {
@@ -265,7 +265,7 @@ namespace PerformanceEvaluation.API.Controllers
         /// <param name="fileType">Type category for validation</param>
         /// <returns>Validation results</returns>
         [HttpPost("validate")]
-        public async Task<IActionResult> ValidateFile([FromForm] IFormFile file, [FromForm] string fileType)
+        public async Task<IActionResult> ValidateFile( IFormFile file,  string fileType)
         {
             try
             {

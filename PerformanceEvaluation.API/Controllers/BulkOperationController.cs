@@ -29,6 +29,7 @@ namespace PerformanceEvaluation.API.Controllers
             _logger = logger;
         }
 
+    
         /// <summary>
         /// Import users from Excel file (Admin only)
         /// </summary>
@@ -37,7 +38,7 @@ namespace PerformanceEvaluation.API.Controllers
         [HttpPost("import-users")]
         [Authorize(Policy = "AdminOnly")]
         [RequestSizeLimit(50 * 1024 * 1024)] // 50MB limit
-        public async Task<IActionResult> ImportUsers([FromForm] IFormFile file)
+        public async Task<IActionResult> ImportUsers(IFormFile file)
         {
             try
             {
@@ -76,7 +77,7 @@ namespace PerformanceEvaluation.API.Controllers
         [HttpPost("import-evaluations")]
         [Authorize(Policy = "ManagerOrAdmin")]
         [RequestSizeLimit(50 * 1024 * 1024)] // 50MB limit
-        public async Task<IActionResult> ImportEvaluations([FromForm] IFormFile file)
+        public async Task<IActionResult> ImportEvaluations( IFormFile file)
         {
             try
             {
@@ -254,7 +255,7 @@ namespace PerformanceEvaluation.API.Controllers
         /// <returns>Validation results</returns>
         [HttpPost("validate-import")]
         [Authorize(Policy = "ManagerOrAdmin")]
-        public async Task<IActionResult> ValidateImportFile([FromForm] IFormFile file, [FromForm] string importType)
+        public async Task<IActionResult> ValidateImportFile( IFormFile file, string importType)
         {
             try
             {
@@ -294,7 +295,7 @@ namespace PerformanceEvaluation.API.Controllers
         /// <returns>Preview data</returns>
         [HttpPost("preview-import")]
         [Authorize(Policy = "ManagerOrAdmin")]
-        public async Task<IActionResult> GetImportPreview([FromForm] IFormFile file, [FromForm] string importType)
+        public async Task<IActionResult> GetImportPreview( IFormFile file, string importType)
         {
             try
             {
